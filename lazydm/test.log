@@ -1,0 +1,55 @@
+URL: http://pylons.thelazydm.org/
+File '/home/lazydm/local/lib/python2.5/site-packages/WebError-0.10.3-py2.5.egg/weberror/errormiddleware.py', line 162 in __call__
+  app_iter = self.application(environ, sr_checker)
+File '/home/lazydm/local/lib/python2.5/site-packages/Paste-1.7.5.1-py2.5.egg/paste/cascade.py', line 130 in __call__
+  return self.apps[-1](environ, start_response)
+File '/home/lazydm/local/lib/python2.5/site-packages/Paste-1.7.5.1-py2.5.egg/paste/registry.py', line 379 in __call__
+  app_iter = self.application(environ, start_response)
+File '/home/lazydm/local/lib/python2.5/site-packages/Pylons-1.0-py2.5.egg/pylons/middleware.py', line 150 in __call__
+  self.app, environ, catch_exc_info=True)
+File '/home/lazydm/local/lib/python2.5/site-packages/Pylons-1.0-py2.5.egg/pylons/util.py', line 48 in call_wsgi_application
+  app_iter = application(environ, start_response)
+File '/home/lazydm/local/lib/python2.5/site-packages/WebError-0.10.3-py2.5.egg/weberror/evalexception.py', line 226 in __call__
+  "The EvalException middleware is not usable in a "
+AssertionError: The EvalException middleware is not usable in a multi-process environment
+
+
+CGI Variables
+-------------
+  DH_USER: 'lazydm'
+  DOCUMENT_ROOT: '/home/lazydm/lazydm/lazydm/public'
+  HTTP_ACCEPT: 'application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5'
+  HTTP_ACCEPT_CHARSET: 'ISO-8859-1,utf-8;q=0.7,*;q=0.3'
+  HTTP_ACCEPT_ENCODING: 'gzip,deflate,sdch'
+  HTTP_ACCEPT_LANGUAGE: 'en-US,en;q=0.8'
+  HTTP_CACHE_CONTROL: 'no-cache'
+  HTTP_CONNECTION: 'keep-alive'
+  HTTP_HOST: 'pylons.thelazydm.org'
+  HTTP_PRAGMA: 'no-cache'
+  HTTP_USER_AGENT: 'Mozilla/5.0 (X11; U; Linux x86_64; en-US) AppleWebKit/534.10 (KHTML, like Gecko) Chrome/8.0.552.224 Safari/534.10'
+  PATH_INFO: '/'
+  REMOTE_ADDR: '68.199.224.218'
+  REMOTE_PORT: '36063'
+  REQUEST_METHOD: 'GET'
+  REQUEST_URI: '/'
+  SCRIPT_URI: 'http://pylons.thelazydm.org/'
+  SCRIPT_URL: '/'
+  SERVER_ADDR: '173.236.205.20'
+  SERVER_ADMIN: 'webmaster@pylons.thelazydm.org'
+  SERVER_NAME: 'pylons.thelazydm.org'
+  SERVER_PORT: '80'
+  SERVER_PROTOCOL: 'HTTP/1.1'
+  SERVER_SOFTWARE: 'Apache'
+  UNIQUE_ID: 'TSvStq3ssc4AAFFpemIAAAAJ'
+  _: '_'
+
+
+WSGI Variables
+--------------
+  application: <paste.cascade.Cascade object at 0x17d0290>
+  ds_id_16840720: ''
+  dsid: '16840720'
+  paste.registry: <paste.registry.Registry object at 0x17d0310>
+  paste.throw_errors: True
+  wsgi process: 'CGI'
+------------------------------------------------------------
