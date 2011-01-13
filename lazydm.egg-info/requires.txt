@@ -1,3 +1,6 @@
 Pylons>=1.0
-SQLAlchemy>=0.5
+SQLAlchemy>=0.6
 Jinja2
+MySQL-python
+pytz
+pygments

@@ -19,6 +19,13 @@ def make_map(config):
 	map.connect('/error/{action}/{id}', controller='error')
 
 	# CUSTOM ROUTES HERE
-	map.connect('/', controller='news')
+	map.connect('/', controller='home')
+	map.connect('/news', controller='news')
+	map.connect('/about', controller='about')
+	map.connect('/resources', controller='resources')
+	map.connect('/contact', controller='contact')
+
+	map.connect('/news/{news_id:\d+}', controller='news', action='show_id')
+	map.connect('/news/{news_slug:[a-z\-]+}', controller='news', action='show_slug')
 
 	return map
