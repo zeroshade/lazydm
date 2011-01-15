@@ -1,0 +1,22 @@
+				{{ h.secure_form('#') }}
+                {{ h.hidden('article_id',c.article.id) }}
+                {{ h.hidden('article_slug',c.article.slug) }}
+					<h3>Post a comment</h3>
+					<p>
+						<label for="user">Name</label>
+                        {{ c.modelcomment.text('user',required='required') }}
+					</p>
+					<p>
+						<label for="email">E-mail</label>
+                        {{ c.modelcomment.text('email',type='email',required='required') }}
+					</p>
+					<p>
+						<label for="website">Website</label>
+                        {{ c.modelcomment.text('website',type='url',required='required') }}
+					</p>
+					<p>
+						<label for="comment">Comment</label>
+                        {{ c.modelcomment.textarea('content',required='required') }}
+					</p>
+					<p><input type="submit" value="Post comment" /></p>
+				{{ h.end_form() }}

@@ -30,6 +30,7 @@ lazydm/lib/filters.py
 lazydm/lib/helpers.py
 lazydm/model/__init__.py
 lazydm/model/article.py
+lazydm/model/comment.py
 lazydm/model/meta.py
 lazydm/public/bg.png
 lazydm/public/favicon.gif
