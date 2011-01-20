@@ -137,7 +137,7 @@ nav ul li.subscribe a {
  * Content
  ************************/
 
-#content {
+#content-body {
 	display: table;
 }
 
@@ -208,7 +208,7 @@ aside {
 	padding: 22px;
 }
 
-#comments article:nth-child(odd) {
+#comments article:nth-child(even) {
 	padding: 21px;
 	background: #E3E3E3;
 	border: 1px solid #D7D7D7;
@@ -234,6 +234,8 @@ aside {
 
 #comments article p {
 	padding: 0;
+    width: 330px;
+    padding-bottom: 16px;
 }
 
 /************************
@@ -250,6 +252,12 @@ form p {
 	display: table;
 	margin-bottom: 22px;
 	padding: 0 22px;
+}
+
+form p .validation-advice {
+    font-size: 10px;
+    color: red;
+    margin-bottom: -15px;
 }
 
 form label {
@@ -277,8 +285,6 @@ form textarea {
 form input[type="submit"] {
 	margin-left: 162px;
 }
-
-form input:not:focus
 
 /************************
  * Sidebar
@@ -364,6 +370,12 @@ aside section ul li a:hover {
  * MISC
  ************************/
 
+.notify {
+    margin-top: 21px;
+	padding-top: 22px;
+	border-top: 1px solid #d7d7d7;
+}
+
 .errorlist {
 	color: #C00;
 	padding-left: 140px;
@@ -403,10 +415,35 @@ input:focus, textarea:focus {
 }
 
 input:valid, textarea:valid {
-	background: url("/img/tick.png") no-repeat 280px 4px;
+/*	background: url("/img/tick.png") no-repeat 280px 4px; */
 	background-color: #FFF;
 }
 
 input[type="submit"] {
 	opacity: 1.0;
+}
+
+/************************
+ * Pagelist
+ ************************/
+.pagelist {
+    margin: 0px auto;
+    width: 550px;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.pagelist a {
+    font-style: italic;
+	color: #777;
+}
+
+.pagelist a:hover {
+    text-decoration: none;
+    color: #000;
+}
+
+.pager_link, .pager_curpage {
+    padding-left: 2px;
+    padding-right: 2px;
 }

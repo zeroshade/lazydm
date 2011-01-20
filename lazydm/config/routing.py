@@ -28,4 +28,5 @@ def make_map(config):
 	map.connect('/news/{news_id:\d+}', controller='news', action='show_id')
 	map.connect('/news/{news_slug:[a-z\-]+}', controller='news', action='show_slug')
 
+	map.connect('/comment/{action}/{type:(article)}/{id:\d+}', controller='comments')
 	return map

@@ -37,7 +37,8 @@ def load_environment(global_conf, app_conf):
 
 
     # Create the Jinja2 Environment
-    jinja2_env = Environment(loader=FileSystemLoader(paths['templates']))
+    jinja2_env = Environment(loader=FileSystemLoader(paths['templates']),
+                 extensions=['jinja2.ext.with_'])
     config['pylons.app_globals'].jinja2_env = jinja2_env
 
     jinja2_env.filters['bbcode'] = bbcode

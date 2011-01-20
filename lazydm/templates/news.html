@@ -1,7 +1,11 @@
 {% extends "/base.html" %}
 {% block title %}News{% endblock %}
+{% block jsinc %}
+        {{ super() }}
+{% endblock %}
 
 			{% block maincontent %}
+            <!-- {{ c.session }} -->
 				<article class="blogpost">
 					<header>
 						<h2>{{ c.article.title|title }}</h2>
@@ -19,16 +23,12 @@
 				<header>
 					<h3>Comments</h3>
 				</header>
-                {%- for com in c.article.comments %}
-				<article>
-					<header>
-						<a href="#">{{ com.user }}</a> on <time datetime="{{ com.pub_date.isoformat() }}">{{ com.pub_date.strftime('%b %d, %Y at %H:%M:%S %p') }}</time>
-					</header>
-					{{ h.para(com.content)|bbcode }}
-				</article>
-                {%- endfor %}
-
-				<div id='comment-form'>
+                
+                <div id='comment-list'>
+                    {% include('/comment_list.html') %}
+                </div>
+                
+				<div id='comment-form-section'>
 					{% include "/comment-form.html" %}
 				</div>
 

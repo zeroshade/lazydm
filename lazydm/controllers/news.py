@@ -17,7 +17,14 @@ log = logging.getLogger(__name__)
 class NewsController(BaseController):
 
     def __before__(self):
-        self.news_q = Session.query(Article)
+        self.news_q = Session.query(Article).options(eagerload('comments'))
+        if 'page' in request.params:
+            c.page = request.params['page']
+        else:
+            c.page = 1
+
+    def _comments(self):
+        c.CommentPage = c.article.getComments(5,c.page)
 
     def index(self):
         # Return a rendered template
@@ -26,15 +33,28 @@ class NewsController(BaseController):
         c.article = self.news_q.order_by(Article.pub_date).first()
         return render('/index.html')
 
-    def show_id(self, news_id):
+    def _resolve_page(self):
+        self._comments()
         c.modelcomment = ModelTags(None)
-        c.article = self.news_q.options(eagerload('comments')).filter_by(id=news_id).one()
-        if c.article:
+        if session.get('form_errors'):
+            c.form_errors = session.get('form_errors')
+            del session['form_errors']
+            c.modelcomment = ModelTags(session.get('com_object'))
+            del session['com_object']
+            session.save()
+        if 'partial' in request.params:
+            return render('/comment_list.html')
+        else:
             return render('/news.html')
+        
+    def show_id(self, news_id):
+        c.article = self.news_q.filter_by(id=news_id).one()
+        if c.article:
+            return self._resolve_page()
         abort(404)
 
     def show_slug(self, news_slug):
         c.article = self.news_q.filter_by(slug=news_slug).one()
         if c.article:
-            return render('/news.html')
+            return self._resolve_page()
         abort(404)

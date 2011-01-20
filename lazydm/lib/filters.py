@@ -7,7 +7,7 @@ def bbcode(value):
                   '<i>\\1</i>',
                   value)
     value = re.sub(re.compile('\[b\](.+?)\[\/b\]', re.DOTALL),
-                  '<strong>\1</strong>',
+                  '<strong>\\1</strong>',
                   value)
     value = re.sub(re.compile('\[code\](.+?)\[\/code\]', re.DOTALL),
                   highlight_callback,

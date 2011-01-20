@@ -1,22 +1,40 @@
-				{{ h.secure_form('#') }}
+{{ h.javascript_link('/js/comment_form.js') }}
+{{ h.secure_form(url(controller='comments',action='add',type='article',id=c.article.id),id='comment-form') }}
                 {{ h.hidden('article_id',c.article.id) }}
                 {{ h.hidden('article_slug',c.article.slug) }}
+                {{ h.hidden('type', 'article') }}
+                {{ h.hidden('honey','') }}
+                
+                {% with errors = c.form_errors|default([]) %}
 					<h3>Post a comment</h3>
-					<p>
+                    <p{{ " class='error'" if errors['user'] }}>
 						<label for="user">Name</label>
-                        {{ c.modelcomment.text('user',required='required') }}
+                        {{ c.modelcomment.text('user',required='required',class='required') }}
+                        {% if errors['user'] %}
+                        <span style='display: block;' class='validation-advice'>{{ errors['user'] }}</span>
+                        {% endif %}
 					</p>
-					<p>
+                    <p{{ " class='error'" if errors['email'] }}>
 						<label for="email">E-mail</label>
-                        {{ c.modelcomment.text('email',type='email',required='required') }}
+                        {{ c.modelcomment.text('email',type='email',required='required',class='required validate-email') }}
+                        {% if errors['email'] %}
+                        <span style='display: block;' class='validation-advice'>{{ errors['email'] }}</span>
+                        {% endif %}
 					</p>
-					<p>
+					<p{{ " class='error'" if errors['website'] }}>
 						<label for="website">Website</label>
-                        {{ c.modelcomment.text('website',type='url',required='required') }}
+                        {{ c.modelcomment.text('website',type='url',class='validate-url') }}
+                        {% if errors['website'] %}
+                        <span style='display: block;' class='validation-advice'>{{ errors['website'] }}</span>
+                        {% endif %}
 					</p>
-					<p>
-						<label for="comment">Comment</label>
-                        {{ c.modelcomment.textarea('content',required='required') }}
+					<p{{ " class='error'" if errors['content'] }}>
+						<label for="content">Comment</label>
+                        {{ c.modelcomment.textarea('content',required='required',class='required') }}
+                        {% if errors['content'] %}
+                        <span style='display: block;' class='validation-advice'>{{ errors['content'] }}</span>
+                        {% endif %}
 					</p>
 					<p><input type="submit" value="Post comment" /></p>
+                {% endwith %}
 				{{ h.end_form() }}
