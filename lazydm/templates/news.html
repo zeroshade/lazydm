@@ -9,7 +9,7 @@
 				<article class="blogpost">
 					<header>
 						<h2>{{ c.article.title|title }}</h2>
-						<p>Posted on <time datetime="{{ c.article.pub_date.isoformat() }}" pubdate>{{ c.article.pub_date.strftime('%b %d, %Y at %H:%M:%S %p') }}</time>
+						<p>Posted on <time datetime="{{ c.article.pub_date.isoformat() }}" pubdate>{{ c.article.pub_date.strftime('%b %d, %Y at %I:%M:%S %p') }}</time>
 						by <a href="#">Zeroshade</a> - <a href="#comments">{{ c.article.comments|length }} comment{{ c.article.comments|length|plural }}</a></p>
 					</header>
 					<div>
