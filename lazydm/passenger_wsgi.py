@@ -6,7 +6,12 @@ sys.path.append(os.getcwd())
 sys.path.append("/home/lazydm/lazydm")
 from paste.deploy import loadapp
 
-def application(environ, start_response):
-    environ['SCRIPT_NAME'] = environ['PATH_INFO']
-    application = loadapp('config:/home/lazydm/lazydm/development.ini')
-    return application(environ, start_response)
+from paste.exceptions.errormiddleware import ErrorMiddleware
+
+#def application(environ, start_response):
+#    environ['SCRIPT_NAME'] = environ['PATH_INFO']
+#    application = loadapp('config:/home/lazydm/lazydm/development.ini')
+#    return application(environ, start_response)
+
+application = loadapp('config:/home/lazydm/lazydm/development.ini')
+application = ErrorMiddleware(application, debug=True)
