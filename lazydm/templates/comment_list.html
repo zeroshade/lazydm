@@ -4,7 +4,7 @@
                 {%- for com in c.CommentPage %}
 				<article>
 					<header>
-						<a href="#">{{ com.user }}</a> on <time datetime="{{ com.pub_date.isoformat() }}">{{ com.pub_date.strftime('%b %d, %Y at %H:%M:%S %p') }}</time>
+						<a href="#">{{ com.user }}</a> on <time datetime="{{ com.pub_date.isoformat() }}">{{ com.pub_date.strftime('%b %d, %Y at %I:%M:%S %p') }}</time>
 					</header>
 					{{ h.para(com.content)|bbcode }}
 				</article>

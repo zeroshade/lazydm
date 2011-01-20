@@ -12,7 +12,7 @@ class Comment(Base):
 
     id = Column(Integer, primary_key=True)
     user = Column(Unicode(50),nullable=False)
-    pub_date = Column(DateTime(timezone=True),default=datetime.now(pytz.utc),index=True)
+    pub_date = Column(DateTime(timezone=True),default=datetime.now(timezone("America/New_York")),index=True)
     email = Column(Unicode(50),nullable=False)
     content = Column(UnicodeText,nullable=False)
     website = Column(Unicode(100),default=None)
