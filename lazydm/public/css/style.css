@@ -33,6 +33,16 @@ p {
 	padding-bottom: 22px;
 }
 
+h3 a {
+	color: #000;
+	text-decoration: none;
+}
+
+h3 a:hover {
+	color: #777;
+	text-decoration: underline;
+}
+
 /************************
  * Navigation
  ************************/
@@ -58,7 +68,7 @@ nav ul li {
 
 nav ul li a {
 	display: block;
-	margin-right: 10px;
+	margin-right: 44px;
 	width: 130px;
 	font-size: 14px;
 	line-height: 44px;
@@ -91,9 +101,9 @@ nav ul li.subscribe a {
 	margin-top: 66px;
 	padding: 44px;
 	background-size: 100%;
-	background: #467612 -webkit-gradient(linear, left bottom, left top, color-stop(0.07,#467612), color-stop(0.99,#B4DD10));
-	background: #467612 -moz-linear-gradient(top, #B4DD10 3%, #467612 99%);
 	border-radius: 22px;
+	background: #000 -webkit-gradient(linear, left top, right top, color-stop(0.02,#4C0000), color-stop(0.6,#000));
+	background: #000 -moz-linear-gradient(left, #4C0000 2%, #000 70%);
 
 	/* Background-size not implemented yet */
 	-webkit-background-size: 100%;
@@ -108,7 +118,7 @@ nav ul li.subscribe a {
 #intro h2, #intro p {
 	position: relative;
 	z-index: 9999;
-	width: 336px;
+	width: 400px;
 }
 
 #intro h2 {
@@ -126,10 +136,11 @@ nav ul li.subscribe a {
 	position: absolute;
 	top: 0;
 	right: 0;
-	width: 653px;
+	width: 350px;
 	height: 100%;
 
-	-moz-border-radius: 22px;
+	border-radius:         22px;
+	-moz-border-radius:    22px;
 	-webkit-border-radius: 22px;
 }
 
@@ -145,6 +156,10 @@ nav ul li.subscribe a {
 	display: table-cell;
 	width: 620px;
 	padding-right: 22px;
+}
+
+#mainContent section article:nth-child(even) {
+	border-top: 2px solid #D7D7D7;
 }
 
 aside {

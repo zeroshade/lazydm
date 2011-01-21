@@ -2,15 +2,21 @@
 {% block title %}News{% endblock %}
 {% block jsinc %}
         {{ super() }}
+	<script type='text/javascript'>
+	    function commentload(url) {
+		$('comment-list').load(url);
+		new Fx.Scroll(window).toElement('comments');
+		return false;
+	    }
+	</script>
 {% endblock %}
 
 			{% block maincontent %}
-            <!-- {{ c.session }} -->
 				<article class="blogpost">
 					<header>
 						<h2>{{ c.article.title|title }}</h2>
 						<p>Posted on <time datetime="{{ c.article.pub_date.isoformat() }}" pubdate>{{ c.article.pub_date.strftime('%b %d, %Y at %I:%M:%S %p') }}</time>
-						by <a href="#">Zeroshade</a> - <a href="#comments">{{ c.article.comments|length }} comment{{ c.article.comments|length|plural }}</a></p>
+						by <a href="#">{{ c.article.author }}</a> - <a href="#comments">{{ c.article.comments|length }} comment{{ c.article.comments|length|plural }}</a></p>
 					</header>
 					<div>
 						{{ h.para(c.article.content)|bbcode }}

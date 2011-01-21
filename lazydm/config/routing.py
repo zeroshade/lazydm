@@ -12,21 +12,22 @@ def make_map(config):
 	always_scan=config['debug'])
 	map.minimization = False
 	map.explicit = False
+	map.append_slash = True
 
 	# The ErrorController route (handles 404/500 error pages); it should
 	# likely stay at the top, ensuring it can always be resolved
-	map.connect('/error/{action}', controller='error')
-	map.connect('/error/{action}/{id}', controller='error')
+	map.connect('/error/{action}/', controller='error')
+	map.connect('/error/{action}/{id}/', controller='error')
 
 	# CUSTOM ROUTES HERE
 	map.connect('/', controller='home')
-	map.connect('/news', controller='news')
-	map.connect('/about', controller='about')
-	map.connect('/resources', controller='resources')
-	map.connect('/contact', controller='contact')
+	map.connect('/news/', controller='news')
+	#~ map.connect('/about/', controller='about')
+	map.connect('/resources/', controller='resources')
+	map.connect('/contact/', controller='contact')
 
-	map.connect('/news/{news_id:\d+}', controller='news', action='show_id')
-	map.connect('/news/{news_slug:[a-z\-]+}', controller='news', action='show_slug')
+	map.connect('/news/{news_id:\d+}/', controller='news', action='show_id')
+	map.connect('/news/{news_slug:[a-z\-]+}/', controller='news', action='show_slug')
 
-	map.connect('/comment/{action}/{type:(article)}/{id:\d+}', controller='comments')
+	map.connect('/comment/{action}/{type:(article)}/{id:\d+}/', controller='comments')
 	return map

@@ -2,14 +2,14 @@ import logging
 
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
-from lazydm.lib.app_globals import Globals
+from sqlalchemy.sql.expression import desc
 
 from lazydm.lib.base import BaseController, render
 from lazydm.model.article import Article
 from lazydm.model.comment import Comment
 from lazydm.model.meta import Session
 
-from sqlalchemy.orm import eagerload
+from sqlalchemy.orm import joinedload
 from webhelpers.html.tags import ModelTags
 
 log = logging.getLogger(__name__)
@@ -17,7 +17,8 @@ log = logging.getLogger(__name__)
 class NewsController(BaseController):
 
     def __before__(self):
-        self.news_q = Session.query(Article).options(eagerload('comments'))
+        c.comment_type = 'article'
+        self.news_q = Session.query(Article).options(joinedload(Article.comments))
         if 'page' in request.params:
             c.page = request.params['page']
         else:
@@ -27,14 +28,13 @@ class NewsController(BaseController):
         c.CommentPage = c.article.getComments(5,c.page)
 
     def index(self):
-        # Return a rendered template
-        #return render('/news.mako')
-        # or, return a string
-        c.article = self.news_q.order_by(Article.pub_date).first()
-        return render('/index.html')
+        c.articles = self.news_q.order_by(desc(Article.pub_date)).all()
+        return render('/news_index.html')
 
     def _resolve_page(self):
         self._comments()
+        c.comment_id = c.article.id
+        c.comment_slug = c.article.slug
         c.modelcomment = ModelTags(None)
         if session.get('form_errors'):
             c.form_errors = session.get('form_errors')

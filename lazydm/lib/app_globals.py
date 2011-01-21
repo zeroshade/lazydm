@@ -8,7 +8,7 @@ class Globals(object):
     life of the application
 
     """
-    nav = ('home','Home'),('news','News'),('about','About'),('resources','DM Resources'),('contact','Contact')
+    nav = ('home','Home'),('news','News'),('resources','DM Resources'),('contact','Contact')
 
     def __init__(self, config):
         """One instance of Globals is created during application

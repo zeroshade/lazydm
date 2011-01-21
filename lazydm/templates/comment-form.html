@@ -1,8 +1,8 @@
 {{ h.javascript_link('/js/comment_form.js') }}
-{{ h.secure_form(url(controller='comments',action='add',type='article',id=c.article.id),id='comment-form') }}
-                {{ h.hidden('article_id',c.article.id) }}
-                {{ h.hidden('article_slug',c.article.slug) }}
-                {{ h.hidden('type', 'article') }}
+{{ h.secure_form(url(controller='comments',action='add',type=c.comment_type,id=c.comment_id),id='comment-form') }}
+                {{ h.hidden('com_id',c.comment_id) }}
+                {{ h.hidden('com_slug',c.comment_slug) }}
+                {{ h.hidden('type', c.comment_type) }}
                 {{ h.hidden('honey','') }}
                 
                 {% with errors = c.form_errors|default([]) %}
