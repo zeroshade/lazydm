@@ -1,6 +1,6 @@
 // MooTools: the javascript framework.
-// Load this file's selection again by visiting: http://mootools.net/more/a7214e656b51d9c05b70f0e8b2461d58 
-// Or build this file again with packager using: packager build More/More More/Array.Extras More/Date More/URI More/Element.Forms More/Form.Request More/Form.Request.Append More/Form.Validator.Inline More/Form.Validator.Extras More/OverText More/Fx.Elements More/Slider More/Assets More/Color More/HtmlTable.Zebra More/HtmlTable.Sort More/HtmlTable.Select
+// Load this file's selection again by visiting: http://mootools.net/more/b8db9a313d0055c4fdff383c9f7cc5dd 
+// Or build this file again with packager using: packager build More/More More/Array.Extras More/Date More/URI More/Element.Forms More/Form.Request More/Form.Request.Append More/Form.Validator.Inline More/Form.Validator.Extras More/OverText More/Fx.Elements More/Fx.Scroll More/Slider More/Assets More/Color More/HtmlTable.Zebra More/HtmlTable.Sort More/HtmlTable.Select
 /*
 ---
 copyrights:
@@ -354,7 +354,19 @@ Object.append(OverText,{each:function(a){return OverText.instances.map(function(
 }Fx.Elements=new Class({Extends:Fx.CSS,initialize:function(b,a){this.elements=this.subject=$$(b);this.parent(a);},compute:function(g,h,j){var c={};for(var d in g){var a=g[d],e=h[d],f=c[d]={};
 for(var b in a){f[b]=this.parent(a[b],e[b],j);}}return c;},set:function(b){for(var c in b){if(!this.elements[c]){continue;}var a=b[c];for(var d in a){this.render(this.elements[c],d,a[d],this.options.unit);
 }}return this;},start:function(c){if(!this.check(c)){return this;}var h={},j={};for(var d in c){if(!this.elements[d]){continue;}var f=c[d],a=h[d]={},g=j[d]={};
-for(var b in f){var e=this.prepare(this.elements[d],b,f[b]);a[b]=e.from;g[b]=e.to;}}return this.parent(h,j);}});var Drag=new Class({Implements:[Events,Options],options:{snap:6,unit:"px",grid:false,style:true,limit:false,handle:false,invert:false,preventDefault:false,stopPropagation:false,modifiers:{x:"left",y:"top"}},initialize:function(){var b=Array.link(arguments,{options:Type.isObject,element:function(c){return c!=null;
+for(var b in f){var e=this.prepare(this.elements[d],b,f[b]);a[b]=e.from;g[b]=e.to;}}return this.parent(h,j);}});(function(){Fx.Scroll=new Class({Extends:Fx,options:{offset:{x:0,y:0},wheelStops:true},initialize:function(c,b){this.element=this.subject=document.id(c);
+this.parent(b);if(typeOf(this.element)!="element"){this.element=document.id(this.element.getDocument().body);}if(this.options.wheelStops){var d=this.element,e=this.cancel.pass(false,this);
+this.addEvent("start",function(){d.addEvent("mousewheel",e);},true);this.addEvent("complete",function(){d.removeEvent("mousewheel",e);},true);}},set:function(){var b=Array.flatten(arguments);
+if(Browser.firefox){b=[Math.round(b[0]),Math.round(b[1])];}this.element.scrollTo(b[0]+this.options.offset.x,b[1]+this.options.offset.y);},compute:function(d,c,b){return[0,1].map(function(e){return Fx.compute(d[e],c[e],b);
+});},start:function(c,h){if(!this.check(c,h)){return this;}var e=this.element,f=e.getScrollSize(),b=e.getScroll(),d=e.getSize();values={x:c,y:h};for(var g in values){if(!values[g]&&values[g]!==0){values[g]=b[g];
+}if(typeOf(values[g])!="number"){values[g]=f[g]-d[g];}values[g]+=this.options.offset[g];}return this.parent([b.x,b.y],[values.x,values.y]);},toTop:function(){return this.start(false,0);
+},toLeft:function(){return this.start(0,false);},toRight:function(){return this.start("right",false);},toBottom:function(){return this.start(false,"bottom");
+},toElement:function(d){var c=document.id(d).getPosition(this.element),b=a(this.element)?{x:0,y:0}:this.element.getScroll();return this.start(c.x+b.x,c.y+b.y);
+},scrollIntoView:function(d,g,e){g=g?Array.from(g):["x","y"];d=document.id(d);var i={},f=d.getPosition(this.element),j=d.getSize(),h=this.element.getScroll(),b=this.element.getSize(),c={x:f.x+j.x,y:f.y+j.y};
+["x","y"].each(function(k){if(g.contains(k)){if(c[k]>h[k]+b[k]){i[k]=c[k]-b[k];}if(f[k]<h[k]){i[k]=f[k];}}if(i[k]==null){i[k]=h[k];}if(e&&e[k]){i[k]=i[k]+e[k];
+}},this);if(i.x!=h.x||i.y!=h.y){this.start(i.x,i.y);}return this;},scrollToCenter:function(e,f,h){f=f?Array.from(f):["x","y"];e=document.id(e);var i={},c=e.getPosition(this.element),d=e.getSize(),b=this.element.getScroll(),g=this.element.getSize();
+["x","y"].each(function(j){if(f.contains(j)){i[j]=c[j]-(g[j]-d[j])/2;}if(i[j]==null){i[j]=b[j];}if(h&&h[j]){i[j]=i[j]+h[j];}},this);if(i.x!=b.x||i.y!=b.y){this.start(i.x,i.y);
+}return this;}});function a(b){return(/^(?:body|html)$/i).test(b.tagName);}})();var Drag=new Class({Implements:[Events,Options],options:{snap:6,unit:"px",grid:false,style:true,limit:false,handle:false,invert:false,preventDefault:false,stopPropagation:false,modifiers:{x:"left",y:"top"}},initialize:function(){var b=Array.link(arguments,{options:Type.isObject,element:function(c){return c!=null;
 }});this.element=document.id(b.element);this.document=this.element.getDocument();this.setOptions(b.options||{});var a=typeOf(this.options.handle);this.handles=((a=="array"||a=="collection")?$$(this.options.handle):document.id(this.options.handle))||this.element;
 this.mouse={now:{},pos:{}};this.value={start:{},now:{}};this.selection=(Browser.ie)?"selectstart":"mousedown";if(Browser.ie&&!Drag.ondragstartFixed){document.ondragstart=Function.from(false);
 Drag.ondragstartFixed=true;}this.bound={start:this.start.bind(this),check:this.check.bind(this),drag:this.drag.bind(this),stop:this.stop.bind(this),cancel:this.cancel.bind(this),eventStop:Function.from(false)};

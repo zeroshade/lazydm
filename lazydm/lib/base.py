@@ -5,6 +5,9 @@ Provides the BaseController class for subclassing.
 from pylons.controllers import WSGIController
 from pylons.templating import render_jinja2 as render
 
+from paste.request import construct_url
+from paste.httpexceptions import HTTPMovedPermanently
+
 from lazydm.model.meta import Session
 
 class BaseController(WSGIController):
@@ -14,6 +17,10 @@ class BaseController(WSGIController):
         # WSGIController.__call__ dispatches to the Controller method
         # the request is routed to. This routing information is
         # available in environ['pylons.routes_dict']
+        if not environ['PATH_INFO'].endswith('/'):
+            environ['PATH_INFO'] += '/'
+            url = construct_url(environ)
+            raise HTTPMovedPermanently(url)
         try:
             return WSGIController.__call__(self, environ, start_response)
         finally:

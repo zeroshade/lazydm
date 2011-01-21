@@ -31,7 +31,7 @@ def setup_app(command, conf, vars):
                         content=con))
 
     content = u'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumyeirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diamvoluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumyeirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diamvoluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumyeirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diamvoluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumyeirmod tempor invidunt ut labore et dolore magna'
-    Session.add(Comment(user=u'Benjamin Franklin', email=u'zotthewizard@gmail.com', content=content, article_id=1))
-    Session.add(Comment(user=u'George Washington', email=u'wtf@gmail.com', content=content, article_id=1))
+    Session.add(Comment(user=u'Benjamin Franklin', email=u'zotthewizard@gmail.com', content=content, article_id=1,type='article',ip_addr='192.168.1.1'))
+    Session.add(Comment(user=u'George Washington', email=u'wtf@gmail.com', content=content, article_id=1,type='article',ip_addr='192.168.1.1'))
     Session.commit()
     log.info("Success!!")
