@@ -6,13 +6,16 @@ from pytz import timezone
 import pytz
 from lazydm.model.meta import Base
 
+def defdate():
+    return datetime.now(timezone("America/New_York"))
+
 class Comment(Base):
     __tablename__ = "lazydm_comments"
 
     id = Column(Integer, primary_key=True)
     type = Column(String(20),nullable=False)
     user = Column(Unicode(50),nullable=False)
-    pub_date = Column(DateTime(timezone=True),default=datetime.now(timezone("America/New_York")),index=True)
+    pub_date = Column(DateTime(timezone=True),default=defdate,index=True)
     email = Column(Unicode(50),nullable=False)
     content = Column(UnicodeText,nullable=False)
     website = Column(Unicode(100),default=None)
