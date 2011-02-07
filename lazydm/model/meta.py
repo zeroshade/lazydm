@@ -9,3 +9,5 @@ Session = scoped_session(sessionmaker())
 
 # The declarative Base
 Base = declarative_base()
+
+metadata = Base.metadata

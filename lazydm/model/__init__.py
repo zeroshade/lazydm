@@ -1,6 +1,6 @@
 """The application's model objects"""
 from lazydm.model.meta import Session, Base
-
+from lazydm.model.repoze import User, Group, Permission
 import logging
 
 log = logging.getLogger(__name__)

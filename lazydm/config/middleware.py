@@ -9,6 +9,7 @@ from pylons.wsgiapp import PylonsApp
 from routes.middleware import RoutesMiddleware
 from paste import httpexceptions
 from lazydm.config.environment import load_environment
+from lazydm.lib.auth import add_auth
 
 def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     """Create a Pylons WSGI application and return it
@@ -44,6 +45,7 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     app = SessionMiddleware(app, config)
 
     # CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
+    app = add_auth(app, config)
 
     if asbool(full_stack):
         # Handle Python exceptions

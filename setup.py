@@ -18,7 +18,9 @@ setup(
         "Jinja2",
         "MySQL-python",
         "pytz",
-        "pygments"
+        "pygments",
+        "repoze.what-pylons",
+        "repoze.what-quickstart"
     ],
     setup_requires=["PasteScript>=1.6.3"],
     packages=find_packages(exclude=['ez_setup']),
