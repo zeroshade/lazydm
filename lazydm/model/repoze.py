@@ -5,9 +5,10 @@ from sqlalchemy import Table, Column, ForeignKey
 from sqlalchemy.types import Integer, Unicode, DateTime, UnicodeText, String
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql.expression import desc
-from lazydm.model.meta import Base, metadata
+from lazydm.model.meta import Base, metadata, Session
 import os
 from hashlib import sha1
+from pylons import request
 
 # This is the association table for the many-to-many relationship between
 # groups and permissions.
@@ -78,4 +79,14 @@ class User(Base):
         hashed_pass = sha1()
         hashed_pass.update(password + self.password[:40])
         return self.password[40:] == hashed_pass.hexdigest()
-        
+    
+    @staticmethod
+    def getCurrent():
+        identity = request.environ['repoze.what.credentials']
+        if not identity:
+            return None
+        return User.get(identity['repoze.what.userid'])
+    
+    @staticmethod    
+    def get(user):
+        return Session.query(User).filter_by(username=user).one()

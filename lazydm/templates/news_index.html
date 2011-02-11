@@ -1,11 +1,11 @@
 {% extends "/base.html" %}
 {% block title %}News{% endblock %}
                 {% block maincontent %}
+                <h1>Latest News</h1>
                 {% for article in c.articles %}
-                    <h1>Latest News</h1>
                     <article class="blogpost">
                         <header>
-                            <h3>{{ h.link_to(article.title|title,url(controller='news',action='show_slug',news_slug=article.slug)) }}</h3>
+                            <h3>{{ h.link_to(article.title|title,url.current(action='show_slug',news_slug=article.slug)) }}</h3>
                             <p>Posted on <time datetime="{{ article.pub_date.isoformat() }}" pubdate>{{ article.pub_date.strftime('%b %d, %Y at %I:%M:%S %p') }}</time>
                             by <a href="#">{{ article.author.fullname }}</a> - <a href="#comments">{{ article.comments|length }} comment{{ article.comments|length|plural }}</a></p>
                         </header>

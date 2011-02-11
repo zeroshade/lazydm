@@ -284,7 +284,7 @@ form label {
 	vertical-align: top;
 }
 
-form input[type="text"], form input[type="email"], form input[type="url"] {
+form input[type="text"], form input[type="email"], form input[type="url"], form input[type="password"] {
 	display: table-cell;
 	width: 300px;
 	height: 20px;
@@ -328,6 +328,23 @@ aside section ul li a{
 
 aside section ul li a:hover {
 	text-decoration: underline;
+}
+
+aside form {
+    margin-top: 3px;
+    padding-top: 10px;
+}
+
+aside form label {
+    width: 50px;
+}
+
+aside form input[type="text"], aside form input[type="password"] {
+    width: 120px;
+}
+
+aside form input[type="submit"] {
+    margin-left: 20px;
 }
 
 /************************
@@ -394,6 +411,12 @@ aside section ul li a:hover {
 .errorlist {
 	color: #C00;
 	padding-left: 140px;
+}
+
+p.error { 
+    color: #F00;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
 }
 
 .error label {

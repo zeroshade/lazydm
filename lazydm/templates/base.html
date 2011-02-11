@@ -11,6 +11,13 @@
     {{ h.javascript_link('/js/mootools-core-1.3.js') }}
     {{ h.javascript_link('/js/mootools-more.js') }}
     {%- endblock %}
+    <script type='text/javascript'>
+    <!--
+        window.addEvent('domready', function() {
+            new Form.Validator.Inline(document.id('login-form'));
+        });
+    // -->
+    </script>
 </head>
 
 <body>
@@ -47,7 +54,15 @@
 			
 		</div>
 		<aside>
-			<section>
+            {% block login %}
+            <section>
+                <header>
+                    <h3>Log In</h3>
+                </header>
+                {% include '/derived/account/login.html' %}
+            </section>
+            {% endblock %}
+            <section>
 				<header>
 					<h3>Categories</h3>
 				</header>

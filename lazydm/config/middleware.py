@@ -7,9 +7,23 @@ from paste.deploy.converters import asbool
 from pylons.middleware import ErrorHandler, StatusCodeRedirect
 from pylons.wsgiapp import PylonsApp
 from routes.middleware import RoutesMiddleware
-from paste import httpexceptions
+from routes.util import redirect_to
+from paste.request import construct_url
 from lazydm.config.environment import load_environment
 from lazydm.lib.auth import add_auth
+
+class AddTrailingSlash(object):
+    def __init__(self, app):
+        self.app = app
+        
+    def __call__(self, environ, start_response):
+        if not environ['PATH_INFO'].endswith('/') and not environ['PATH_INFO'].startswith('/_debug'):
+            environ['PATH_INFO'] += '/'
+            url = construct_url(environ)
+            start_response('301 Moved Permanently', [('Location', url)])
+            return []
+        else:
+            return self.app(environ, start_response)
 
 def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     """Create a Pylons WSGI application and return it
@@ -39,7 +53,7 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
 
     # The Pylons WSGI app
     app = PylonsApp(config=config)
-    app = httpexceptions.make_middleware(app, global_conf)
+ #   app = httpexceptions.make_middleware(app, global_conf)
     # Routing/Session/Cache Middleware
     app = RoutesMiddleware(app, config['routes.map'], singleton=False)
     app = SessionMiddleware(app, config)
@@ -57,13 +71,13 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
             app = StatusCodeRedirect(app)
         else:
             app = StatusCodeRedirect(app, [400, 401, 403, 404, 500])
-
     # Establish the Registry for this application
     app = RegistryManager(app)
-
+    app = AddTrailingSlash(app)
     if asbool(static_files):
         # Serve static files
         static_app = StaticURLParser(config['pylons.paths']['static_files'])
         app = Cascade([static_app, app])
+ 
     app.config = config
     return app

@@ -11,3 +11,9 @@ from webhelpers.html.converters import format_paragraphs as para
 from pylons import url
 from datetime import datetime
 from pytz import timezone
+from repoze.what.plugins.pylonshq import is_met
+from repoze.what.predicates import not_anonymous
+from lazydm.model.repoze import User
+
+from webhelpers.pylonslib import Flash as _Flash
+flash = _Flash()

@@ -12,11 +12,11 @@ def add_auth(app, config):
     # we need to provide repoze.what with translations as described here:
     # http://what.repoze.org/docs/plugins/quickstart/
     return setup_sql_auth(app, User, Group, Permission, Session,
-                login_url='/account/login/',
-                post_login_url='/account/login/',
-                post_logout_url='/',
-                login_handler='/account/login_handler/',
-                logout_handler='/account/logout/',
+                login_url='/login/',
+                post_login_url='/login/continue/',
+                post_logout_url='/logout/continue/',
+                login_handler='/login/submit/',
+                logout_handler='/logout/',
                 cookie_secret=config.get('cookie_secret'),
                 translations={
                     'user_name': 'username',

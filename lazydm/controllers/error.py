@@ -1,10 +1,12 @@
 import cgi
-
+import logging
 from paste.urlparser import PkgResourcesParser
 from pylons.middleware import error_document_template
 from webhelpers.html.builder import literal
 
 from lazydm.lib.base import BaseController
+
+log = logging.getLogger(__name__)
 
 class ErrorController(BaseController):
     """Generates error documents as and when they are required.
@@ -18,6 +20,7 @@ class ErrorController(BaseController):
     """
     def document(self):
         """Render the error document"""
+        log.info("MOO")
         request = self._py_object.request
         resp = request.environ.get('pylons.original_response')
         content = literal(resp.body) or cgi.escape(request.GET.get('message', ''))

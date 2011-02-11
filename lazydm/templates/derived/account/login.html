@@ -1,11 +1,28 @@
-{% if c.login_counter > 1 %}
-    <p>Incorrect Username or Password
+{%- if c.came_from %}
+    {%- set login_came_from = c.came_from -%}
+{% else %}
+    {%- set login_came_from = url.current() -%}
+{% endif -%}
+
+{% if h.is_met(h.not_anonymous()) %}
+    <p>Welcome, {{ h.User.getCurrent().fullname }} {{ h.link_to('log out', url('logout', came_from=login_came_from)) }}</p>
+{% else %}
+
+    {% with messages = h.flash.pop_messages() %}
+    {% if messages %}
+        {% for m in messages %}
+        <p class='error'>{{ m }}</p>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {{ h.secure_form(url('login', came_from=login_came_from, __logins=c.login_counter), id='login-form') }}
+                    <p><label for="login">Username:</label>
+                        <input type="text" id="login" name="login" required='required' class='required' value="{{ c.login|default("",true) }}" />
+                    </p>    
+                    <p><label for="password">Password:</label>
+                        <input type="password" id="password" name="password" required='required' class='required' />
+                    </p>
+                    <p><input type="submit" id="submit" value="Log In" /></p>
+                    {{ h.end_form() }}
 {% endif %}
-<form action="{{ h.url(controller='account', action='login_handler'
-,came_from=c.came_from, __logins=c.login_counter) }}" method="POST">
-<label for="login">Username:</label>
-<input type="text" id="login" name="login" /><br />
-<label for="password">Password:</label>
-<input type="password" id="password" name="password" /><br />
-<input type="submit" id="submit" value="Submit" />
-</form>

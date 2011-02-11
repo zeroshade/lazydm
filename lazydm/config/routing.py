@@ -16,8 +16,8 @@ def make_map(config):
     
     # The ErrorController route (handles 404/500 error pages); it should
     # likely stay at the top, ensuring it can always be resolved
-    map.connect('/error/{action}/', controller='error')
-    map.connect('/error/{action}/{id}/', controller='error')
+    map.connect('/error/{action}', controller='error')
+    map.connect('/error/{action}/{id}', controller='error')
     
     # CUSTOM ROUTES HERE
     map.connect('/', controller='home')
@@ -30,5 +30,14 @@ def make_map(config):
     map.connect('/news/{news_slug:[a-z\-]+}/', controller='news', action='show_slug')
     
     map.connect('/comment/{action}/{type:(article)}/{id:\d+}/', controller='comments')
+    
     map.connect('/account/{action}/', controller='account')
+    map.connect('/login/', controller='account', action='login')
+    map.connect('login', '/login/submit/', controller='account', action='login_handler')
+    map.connect('/login/continue/', controller='account', action='login')
+    map.connect('logout', '/logout/', controller='account', action='logout_handler')
+    map.connect('/logout/continue/', controller='account', action='logout')
+    
+    map.connect('/admin/{action}/', controller='admin')
+
     return map
