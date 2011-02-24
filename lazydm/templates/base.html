@@ -14,7 +14,10 @@
     <script type='text/javascript'>
     <!--
         window.addEvent('domready', function() {
+            {% block domready -%}
             new Form.Validator.Inline(document.id('login-form'));
+            alert("moo");
+            {%- endblock %}
         });
     // -->
     </script>
@@ -33,15 +36,17 @@
 			<li class="subscribe"><a href="#">Subscribe via RSS.</a></li>
 		</ul>
 	</nav>
-
+    
 	<section id="intro">
-		<header>
+	{% block intro %}
+    	<header>
 			<h2>Are you a lazy DM? Just a lazy player?</h2>
 		</header>
 		<img src="/img/dragon01.jpg" alt="Dragon" />
 		<p>Whether you're a player generating a character or a DM in need of treasure generation, we have the resources to let you be lazy.</p>
-	</section>
-
+	{% endblock %}
+    </section>
+    
 	<div id="content-body">
 		<div id="mainContent">
 			<section>

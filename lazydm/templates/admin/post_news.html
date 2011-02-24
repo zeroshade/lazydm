@@ -1,0 +1,27 @@
+{% extends '/base.html' %}
+{% block stylesheet %}
+    {{ super() }}
+    {{ h.stylesheet_link('/MooEditable/Assets/MooEditable/MooEditable.css') }}
+{% endblock %}
+{% block jsinc %}
+    {{ super() }}
+    {{ h.javascript_link('/MooEditable/Source/MooEditable/MooEditable.js') }}
+{% endblock %}
+{%- block domready -%}
+        alert("moo");
+        $('news-textarea').mooEditable(
+                onRender: function(){
+                alert('Done rendering.');
+            });
+{%- endblock %}
+{% block title %}Admin - Post News{% endblock %}
+{% block intro %}{% endblock %}
+                        {% block maincontent -%}
+                            <header>
+                                <h2>Create New Post</h2>
+                            </header>
+                            
+                            {{ h.secure_form('#',id='news-post-form') }}
+                            {{ h.HTML.textarea('',id='news-textarea') }}
+                            {{ h.end_form() }}
+                        {% endblock -%}

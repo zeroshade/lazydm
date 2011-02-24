@@ -27,4 +27,4 @@ class AdminController(BaseController):
         # Return a rendered template
         #return render('/admin.mako')
         # or, return a string
-        return 'Hello World'
+        return render('/admin/post_news.html')
