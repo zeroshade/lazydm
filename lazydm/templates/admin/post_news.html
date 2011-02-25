@@ -8,11 +8,7 @@
     {{ h.javascript_link('/MooEditable/Source/MooEditable/MooEditable.js') }}
 {% endblock %}
 {%- block domready -%}
-        alert("moo");
-        $('news-textarea').mooEditable(
-                onRender: function(){
-                alert('Done rendering.');
-            });
+        $('news-textarea').mooEditable({ 'actions' : 'bold italic underline strikethrough | insertunorderedlist insertorderedlist | indent outdent | undo redo | createlink unlink'});
 {%- endblock %}
 {% block title %}Admin - Post News{% endblock %}
 {% block intro %}{% endblock %}
@@ -22,6 +18,8 @@
                             </header>
                             
                             {{ h.secure_form('#',id='news-post-form') }}
-                            {{ h.HTML.textarea('',id='news-textarea') }}
+			    <p>
+                            {{ h.HTML.textarea('moo',id='news-textarea',class='large') }}
+			    </p>
                             {{ h.end_form() }}
                         {% endblock -%}

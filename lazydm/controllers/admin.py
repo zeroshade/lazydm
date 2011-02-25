@@ -10,8 +10,7 @@ from repoze.what.plugins.pylonshq import ControllerProtector
 
 log = logging.getLogger(__name__)
 
-@ControllerProtector(has_permission('admin',\
-                    msg="You must be an admin to access this page"),"denial_handler")
+@ControllerProtector(has_permission('admin',msg="You must be an admin to access this page"),"denial_handler")
 class AdminController(BaseController):
     
     @staticmethod
