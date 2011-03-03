@@ -1,13 +1,7 @@
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.types import Integer, Unicode, DateTime, UnicodeText, String
 from sqlalchemy.orm import relationship, backref
-from datetime import datetime
-from pytz import timezone
-import pytz
-from lazydm.model.meta import Base
-
-def defdate():
-    return datetime.now(timezone("America/New_York"))
+from lazydm.model.meta import Base, defdate
 
 class Comment(Base):
     __tablename__ = "lazydm_comments"

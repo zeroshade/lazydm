@@ -10,6 +10,13 @@ from paste.httpexceptions import HTTPMovedPermanently
 
 from lazydm.model.meta import Session
 
+from webhelpers.pylonslib.grid import PylonsObjectGrid
+from webhelpers.html.builder import HTML
+
+class CustomObjectGrid(PylonsObjectGrid):
+    def default_header_column_format(self, column_number, column_name, header_label):
+        return HTML.th(header_label,class_="c%d %s" % (column_number,column_name))
+
 class BaseController(WSGIController):
 
     def __call__(self, environ, start_response):

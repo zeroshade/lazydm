@@ -19,7 +19,7 @@
 						by <a href="#">{{ c.article.author.fullname }}</a> - <a href="#comments">{{ c.article.comments|length }} comment{{ c.article.comments|length|plural }}</a></p>
 					</header>
 					<div>
-						{{ h.para(c.article.content)|bbcode }}
+						{{ c.article.content }}
 					</div>
 				</article>
 			{% endblock %}

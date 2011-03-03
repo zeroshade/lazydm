@@ -466,6 +466,49 @@ input[type="submit"] {
 	opacity: 1.0;
 }
 
+tr.header {
+    border-bottom: black solid 1px;
+}
+
+div#r0 {
+    padding-bottom: 10px;
+}
+
+div.spacer {
+    border: black dotted 1px;
+    border-bottom: 0;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    padding-left: 1px;
+}
+
+div.spacer:last-of-type {
+    border-bottom: black dotted 1px;
+}
+
+.manage {
+    width: 600px;
+}
+
+.c1 {
+    width: 210px;
+    padding-left: 10px;
+}
+
+.c2 {
+    text-align: center;
+    width: 120px;
+}
+
+.c3 {
+    width: 100px;
+}
+
+.c4, .c5 {
+    text-align: center;
+    width: 75px;
+}
+
 /************************
  * Pagelist
  ************************/

@@ -1,0 +1,44 @@
+{% extends '/base.html' %}
+{% block title %}Admin - Manage Comments{% endblock %}
+{% block intro %}{% endblock %}
+{% block jsinc %}
+    {{ super() }}
+    {{ h.javascript_link('/js/delete_button.js') }}
+{% endblock %}
+{% block domready %}
+            addDelete('/admin/index/', 'comment-article-');
+{% endblock %}
+{% block maincontent %}
+    <header>
+        <h2>Comments for '{{ c.article.title }}'</h2>
+    </header>
+    
+    <div id='r0'>
+        <table class='manage'>
+            <tr class='header'>
+                <th class='c1 user'>User</th>
+                <th class='c2 email'>Email</th>
+                <th class='c3 pubdate'>Pub Date</th>
+                <th class='c4 ip'>IP Addr</th>
+                <th class='c5'>Remove</th>
+            </tr>
+        </table>
+    </div>
+    {% for com in c.article.comments %}
+    <div id='r{{ loop.index }}' class='spacer'>
+        <table class="manage">
+            <tr>
+                <td class='c1'>{{ com.user }}</td>
+                <td class='c2'>{{ com.email }}</td>
+                <td class='c3'>
+                    <time datetime="{{ com.pub_date.isoformat() }}">
+                            {{ com.pub_date.strftime('%b %d, %Y at %I:%M:%S %p') }}
+                    </time>
+                </td>
+                <td class='c4'>{{ com.ip_addr }}</td>
+                <td class='c5'><button class='delete' id='comment-article-{{ com.id }}'>Delete</button></td>
+            </tr>
+        </table>
+    </div>
+    {% endfor %}
+{% endblock %}

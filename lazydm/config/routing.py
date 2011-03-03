@@ -29,7 +29,7 @@ def make_map(config):
     map.connect('/news/{news_id:\d+}/', controller='news', action='show_id')
     map.connect('/news/{news_slug:[a-z\-]+}/', controller='news', action='show_slug')
     
-    map.connect('/comment/{action}/{type:(article)}/{id:\d+}/', controller='comments')
+    map.connect('/comment/add/{type:(article)}/{id:\d+}/', controller='comments',action='add')
     
     map.connect('/account/{action}/', controller='account')
     map.connect('/login/', controller='account', action='login')
@@ -38,6 +38,10 @@ def make_map(config):
     map.connect('logout', '/logout/', controller='account', action='logout_handler')
     map.connect('/logout/continue/', controller='account', action='logout')
     
-    map.connect('/admin/{action}/', controller='admin')
+    map.connect('/admin/manage/{type}/', controller='admin', action='manage', id=0)
+    map.connect('/admin/manage/{type}/{id:\d+}/', controller='admin', action='manage')
+    map.connect('/admin/add/{type}/', controller='admin', action='add_new')
+    
+    #map.connect('/admin/{action}/', controller='admin')
 
     return map

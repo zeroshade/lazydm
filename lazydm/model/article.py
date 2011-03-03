@@ -6,7 +6,7 @@ from sqlalchemy.sql.expression import desc
 from datetime import datetime
 from pytz import timezone
 import pytz
-from lazydm.model.meta import Base
+from lazydm.model.meta import Base, defdate
 from lazydm.model.comment import Comment
 from lazydm.model.repoze import User
 from webhelpers.paginate import Page
@@ -16,8 +16,8 @@ class Article(Base):
 
     id = Column(Integer, primary_key=True)
     author_id = Column(Integer, ForeignKey('lazydm_users.id'))
-    pub_date = Column(DateTime(timezone=True),default=datetime.now(pytz.utc),index=True)
-    mod_date = Column(DateTime(timezone=True),default=datetime.now(pytz.utc),onupdate=datetime.now(pytz.utc))
+    pub_date = Column(DateTime(timezone=True),default=defdate,index=True)
+    mod_date = Column(DateTime(timezone=True),default=defdate,onupdate=defdate)
     title = Column(Unicode(50),nullable=False)
     slug = Column(Unicode(50),nullable=False,index=True,unique=True)
     content = Column(UnicodeText,nullable=False)

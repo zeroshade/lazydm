@@ -1,6 +1,6 @@
 // MooTools: the javascript framework.
-// Load this file's selection again by visiting: http://mootools.net/more/b8db9a313d0055c4fdff383c9f7cc5dd 
-// Or build this file again with packager using: packager build More/More More/Array.Extras More/Date More/URI More/Element.Forms More/Form.Request More/Form.Request.Append More/Form.Validator.Inline More/Form.Validator.Extras More/OverText More/Fx.Elements More/Fx.Scroll More/Slider More/Assets More/Color More/HtmlTable.Zebra More/HtmlTable.Sort More/HtmlTable.Select
+// Load this file's selection again by visiting: http://mootools.net/more/6877f274e41648725f8249093840c33e 
+// Or build this file again with packager using: packager build More/More More/Array.Extras More/Date More/URI More/Element.Forms More/Form.Request More/Form.Request.Append More/Form.Validator.Inline More/Form.Validator.Extras More/OverText More/Fx.Elements More/Fx.Scroll More/Fx.Slide More/Slider More/Assets More/Color More/HtmlTable.Zebra More/HtmlTable.Sort More/HtmlTable.Select More/Tips
 /*
 ---
 
@@ -30,8 +30,8 @@ provides: [MooTools.More]
 */
 
 MooTools.More = {
-	'version': '1.3.0.1',
-	'build': '6dce99bed2792dffcbbbb4ddc15a1fb9a41994b5'
+	'version': '1.3.1.1',
+	'build': '0292a3af1eea242b817fecf9daa127417d10d4ce'
 };
 
 
@@ -52,11 +52,15 @@ authors:
 
 requires:
   - Core/Array
+  - MooTools.More
 
 provides: [Array.Extras]
 
 ...
 */
+
+(function(nil){
+
 Array.implement({
 
 	min: function(){
@@ -74,7 +78,7 @@ Array.implement({
 	sum: function(){
 		var result = 0, l = this.length;
 		if (l){
-			while(l--) result += this[l];
+			while (l--) result += this[l];
 		}
 		return result;
 	},
@@ -93,22 +97,23 @@ Array.implement({
 	},
 
 	reduce: function(fn, value){
-		var undefined;
 		for (var i = 0, l = this.length; i < l; i++){
-			if (i in this) value = value === undefined ? this[i] : fn.call(null, value, this[i], i, this);
+			if (i in this) value = value === nil ? this[i] : fn.call(null, value, this[i], i, this);
 		}
 		return value;
 	},
 
 	reduceRight: function(fn, value){
-		var i = this.length, undefined;
+		var i = this.length;
 		while (i--){
-			if (i in this) value = value === undefined ? this[i] : fn.call(null, value, this[i], i, this);
+			if (i in this) value = value === nil ? this[i] : fn.call(null, value, this[i], i, this);
 		}
 		return value;
 	}
 
 });
+
+}).call(this);
 
 
 /*
@@ -140,12 +145,14 @@ var defined = function(value){
 	return value != null;
 };
 
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
 Object.extend({
 
-	getFromPath: function(source, key){
-		var parts = key.split('.');
+	getFromPath: function(source, parts){
+		if (typeof parts == 'string') parts = parts.split('.');
 		for (var i = 0, l = parts.length; i < l; i++){
-			if (source.hasOwnProperty(parts[i])) source = source[parts[i]];
+			if (hasOwnProperty.call(source, parts[i])) source = source[parts[i]];
 			else return null;
 		}
 		return source;
@@ -153,20 +160,20 @@ Object.extend({
 
 	cleanValues: function(object, method){
 		method = method || defined;
-		for (key in object) if (!method(object[key])){
+		for (var key in object) if (!method(object[key])){
 			delete object[key];
 		}
 		return object;
 	},
 
 	erase: function(object, key){
-		if (object.hasOwnProperty(key)) delete object[key];
+		if (hasOwnProperty.call(object, key)) delete object[key];
 		return object;
 	},
 
 	run: function(object){
 		var args = Array.slice(arguments, 1);
-		for (key in object) if (object[key].apply){
+		for (var key in object) if (object[key].apply){
 			object[key].apply(object, args);
 		}
 		return object;
@@ -174,7 +181,7 @@ Object.extend({
 
 });
 
-})();
+}).call(this);
 
 
 /*
@@ -364,7 +371,7 @@ Object.append(lang, Locale, {
 });
 /*</1.2compat>*/
 
-})();
+}).call(this);
 
 
 /*
@@ -400,6 +407,7 @@ Locale.define('en-US', 'Date', {
 	shortTime: '%I:%M%p',
 	AM: 'AM',
 	PM: 'PM',
+	firstDayOfWeek: 0,
 
 	// Date.Extras
 	ordinal: function(dayOfMonth){
@@ -459,9 +467,9 @@ requires:
   - Core/Array
   - Core/String
   - Core/Number
-  - /Locale
-  - /Locale.en-US.Date
-  - /MooTools.More
+  - MooTools.More
+  - Locale
+  - Locale.en-US.Date
 
 provides: [Date]
 
@@ -472,7 +480,7 @@ provides: [Date]
 
 var Date = this.Date;
 
-Date.Methods = {
+var DateMethods = Date.Methods = {
 	ms: 'Milliseconds',
 	year: 'FullYear',
 	min: 'Minutes',
@@ -487,26 +495,26 @@ Date.Methods = {
 	Date.Methods[method.toLowerCase()] = method;
 });
 
-var pad = function(what, length, string){
-	if (!string) string = '0';
-	return new Array(length - String(what).length + 1).join(string) + what;
+var pad = function(n, digits, string){
+	if (digits == 1) return n;
+	return n < Math.pow(10, digits - 1) ? (string || '0') + pad(n, digits - 1, string) : n;
 };
 
 Date.implement({
 
 	set: function(prop, value){
 		prop = prop.toLowerCase();
-		var m = Date.Methods;
-		if (m[prop]) this['set' + m[prop]](value);
+		var method = DateMethods[prop] && 'set' + DateMethods[prop];
+		if (method && this[method]) this[method](value);
 		return this;
 	}.overloadSetter(),
 
 	get: function(prop){
 		prop = prop.toLowerCase();
-		var m = Date.Methods;
-		if (m[prop]) return this['get' + m[prop]]();
+		var method = DateMethods[prop] && 'get' + DateMethods[prop];
+		if (method && this[method]) return this[method]();
 		return null;
-	},
+	}.overloadGetter(),
 
 	clone: function(){
 		return new Date(this.get('time'));
@@ -561,8 +569,55 @@ Date.implement({
 			- Date.UTC(this.get('year'), 0, 1)) / Date.units.day();
 	},
 
-	getWeek: function(){
-		return (this.get('dayofyear') / 7).ceil();
+	setDay: function(day, firstDayOfWeek){
+		if (firstDayOfWeek == null){
+			firstDayOfWeek = Date.getMsg('firstDayOfWeek');
+			if (firstDayOfWeek === '') firstDayOfWeek = 1;
+		}
+
+		day = (7 + Date.parseDay(day, true) - firstDayOfWeek) % 7;
+		var currentDay = (7 + this.get('day') - firstDayOfWeek) % 7;
+
+		return this.increment('day', day - currentDay);
+	},
+
+	getWeek: function(firstDayOfWeek){
+		if (firstDayOfWeek == null){
+			firstDayOfWeek = Date.getMsg('firstDayOfWeek');
+			if (firstDayOfWeek === '') firstDayOfWeek = 1;
+		}
+
+		var date = this,
+			dayOfWeek = (7 + date.get('day') - firstDayOfWeek) % 7,
+			dividend = 0,
+			firstDayOfYear;
+
+		if (firstDayOfWeek == 1){
+			// ISO-8601, week belongs to year that has the most days of the week (i.e. has the thursday of the week)
+			var month = date.get('month'),
+				startOfWeek = date.get('date') - dayOfWeek;
+
+			if (month == 11 && startOfWeek > 28) return 1; // Week 1 of next year
+
+			if (month == 0 && startOfWeek < -2){
+				// Use a date from last year to determine the week
+				date = new Date(date).decrement('day', dayOfWeek);
+				dayOfWeek = 0;
+			}
+
+			firstDayOfYear = new Date(date.get('year'), 0, 1).get('day') || 7;
+			if (firstDayOfYear > 4) dividend = -7; // First week of the year is not week 1
+		} else {
+			// In other cultures the first week of the year is always week 1 and the last week always 53 or 54.
+			// Days in the same week can have a different weeknumber if the week spreads across two years.
+			firstDayOfYear = new Date(date.get('year'), 0, 1).get('day');
+		}
+
+		dividend += date.get('dayofyear');
+		dividend += 6 - dayOfWeek; // Add days so we calculate the current date's week as a full week
+		dividend += (7 + firstDayOfYear - firstDayOfWeek) % 7; // Make up for first week of the year not being a full week
+
+		return (dividend / 7);
 	},
 
 	getOrdinal: function(day){
@@ -603,8 +658,12 @@ Date.implement({
 
 	format: function(f){
 		if (!this.isValid()) return 'invalid date';
-		f = f || '%x %X';
-		f = formats[f.toLowerCase()] || f; // replace short-hand with actual format
+		if (!f) f = '%x %X';
+
+		var formatLower = f.toLowerCase();
+		if (formatters[formatLower]) return formatters[formatLower](this); // it's a formatter!
+		f = formats[formatLower] || f; // replace short-hand with actual format
+
 		var d = this;
 		return f.replace(/%([a-z%])/gi,
 			function($0, $1){
@@ -613,7 +672,7 @@ Date.implement({
 					case 'A': return Date.getMsg('days')[d.get('day')];
 					case 'b': return Date.getMsg('months_abbr')[d.get('month')];
 					case 'B': return Date.getMsg('months')[d.get('month')];
-					case 'c': return d.format('%a %b %d %H:%m:%S %Y');
+					case 'c': return d.format('%a %b %d %H:%M:%S %Y');
 					case 'd': return pad(d.get('date'), 2);
 					case 'e': return pad(d.get('date'), 2, ' ');
 					case 'H': return pad(d.get('hr'), 2);
@@ -628,13 +687,13 @@ Date.implement({
 					case 'p': return Date.getMsg(d.get('ampm'));
 					case 's': return Math.round(d / 1000);
 					case 'S': return pad(d.get('seconds'), 2);
+					case 'T': return d.format('%H:%M:%S');
 					case 'U': return pad(d.get('week'), 2);
 					case 'w': return d.get('day');
 					case 'x': return d.format(Date.getMsg('shortDate'));
 					case 'X': return d.format(Date.getMsg('shortTime'));
 					case 'y': return d.get('year').toString().substr(2);
 					case 'Y': return d.get('year');
-					/*<1.2compat>*/case 'T': return d.get('GMTOffset');/*</1.2compat>*/
 					case 'z': return d.get('GMTOffset');
 					case 'Z': return d.get('Timezone');
 				}
@@ -647,28 +706,50 @@ Date.implement({
 		return this.format('iso8601');
 	}
 
+}).alias({
+	toJSON: 'toISOString',
+	compare: 'diff',
+	strftime: 'format'
 });
-
-
-Date.alias('toJSON', 'toISOString');
-Date.alias('compare', 'diff');
-Date.alias('strftime', 'format');
 
 var formats = {
 	db: '%Y-%m-%d %H:%M:%S',
 	compact: '%Y%m%dT%H%M%S',
-	iso8601: '%Y-%m-%dT%H:%M:%S%T',
-	rfc822: '%a, %d %b %Y %H:%M:%S %Z',
 	'short': '%d %b %H:%M',
 	'long': '%B %d, %Y %H:%M'
 };
 
-var parsePatterns = [];
-var nativeParse = Date.parse;
+// The day and month abbreviations are standardized, so we cannot use simply %a and %b because they will get localized
+var rfcDayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+	rfcMonthAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+var formatters = {
+	rfc822: function(date){
+		return rfcDayAbbr[date.get('day')] + date.format(', %d ') + rfcMonthAbbr[date.get('month')] + date.format(' %Y %H:%M:%S %Z');
+	},
+	rfc2822: function(date){
+		return rfcDayAbbr[date.get('day')] + date.format(', %d ') + rfcMonthAbbr[date.get('month')] + date.format(' %Y %H:%M:%S %z');
+	},
+	iso8601: function(date){
+		return (
+			date.getUTCFullYear() + '-' +
+			pad(date.getUTCMonth() + 1, 2) + '-' +
+			pad(date.getUTCDate(), 2) + 'T' +
+			pad(date.getUTCHours(), 2) + ':' +
+			pad(date.getUTCMinutes(), 2) + ':' +
+			pad(date.getUTCSeconds(), 2) + '.' +
+			pad(date.getUTCMilliseconds(), 3) + 'Z'
+		);
+	}
+};
+
+
+var parsePatterns = [],
+	nativeParse = Date.parse;
 
 var parseWord = function(type, word, num){
-	var ret = -1;
-	var translated = Date.getMsg(type + 's');
+	var ret = -1,
+		translated = Date.getMsg(type + 's');
 	switch (typeOf(word)){
 		case 'object':
 			ret = translated[word.get(type)];
@@ -688,6 +769,9 @@ var parseWord = function(type, word, num){
 
 	return (num) ? translated.indexOf(ret) : ret;
 };
+
+var startCentury = 1900,
+	startYear = 70;
 
 Date.extend({
 
@@ -732,7 +816,12 @@ Date.extend({
 			var bits = pattern.re.exec(from);
 			return (bits) ? (parsed = pattern.handler(bits)) : false;
 		});
-		return parsed || new Date(nativeParse(from));
+
+		if (!(parsed && parsed.isValid())){
+			parsed = new Date(nativeParse(from));
+			if (!(parsed && parsed.isValid())) parsed = new Date(from.toInt());
+		}
+		return parsed;
 	},
 
 	parseDay: function(day, num){
@@ -763,33 +852,35 @@ Date.extend({
 
 	defineFormat: function(name, format){
 		formats[name] = format;
+		return this;
 	},
 
 	defineFormats: function(formats){
 		for (var name in formats) Date.defineFormat(name, formats[name]);
+		return this;
 	},
 
-//<1.2compat>
-	parsePatterns: parsePatterns, // this is deprecated
-//</1.2compat>
+	//<1.2compat>
+	parsePatterns: parsePatterns,
+	//</1.2compat>
 
 	defineParser: function(pattern){
 		parsePatterns.push((pattern.re && pattern.handler) ? pattern : build(pattern));
+		return this;
 	},
 
 	defineParsers: function(){
 		Array.flatten(arguments).each(Date.defineParser);
+		return this;
 	},
 
 	define2DigitYearStart: function(year){
 		startYear = year % 100;
 		startCentury = year - startYear;
+		return this;
 	}
 
 });
-
-var startCentury = 1900;
-var startYear = 70;
 
 var regexOf = function(type){
 	return new RegExp('(?:' + Date.getMsg(type).map(function(name){
@@ -798,11 +889,13 @@ var regexOf = function(type){
 };
 
 var replacers = function(key){
-	switch(key){
+	switch (key){
+		case 'T':
+			return '%H:%M:%S';
 		case 'x': // iso8601 covers yyyy-mm-dd, so just check if month is first
 			return ((Date.orderIndex('month') == 1) ? '%m[-./]%d' : '%d[-./]%m') + '([-./]%y)?';
 		case 'X':
-			return '%H([.:]%M)?([.:]%S([.:]%s)?)? ?%p? ?%T?';
+			return '%H([.:]%M)?([.:]%S([.:]%s)?)? ?%p? ?%z?';
 	}
 	return null;
 };
@@ -817,7 +910,7 @@ var keys = {
 	p: /[ap]\.?m\.?/,
 	y: /\d{2}|\d{4}/,
 	Y: /\d{4}/,
-	T: /Z|[+-]\d{2}(?::?\d{2})?/
+	z: /Z|[+-]\d{2}(?::?\d{2})?/
 };
 
 keys.m = keys.I;
@@ -866,7 +959,7 @@ var build = function(format){
 
 			if (year != null) handle.call(date, 'y', year); // need to start in the right year
 			if ('d' in bits) handle.call(date, 'd', 1);
-			if ('m' in bits || 'b' in bits || 'B' in bits) handle.call(date, 'm', 1);
+			if ('m' in bits || bits.b || bits.B) handle.call(date, 'm', 1);
 
 			for (var key in bits) handle.call(date, key, bits[key]);
 			return date;
@@ -877,7 +970,7 @@ var build = function(format){
 var handle = function(key, value){
 	if (!value) return this;
 
-	switch(key){
+	switch (key){
 		case 'a': case 'A': return this.set('day', Date.parseDay(value, true));
 		case 'b': case 'B': return this.set('mo', Date.parseMonth(value, true));
 		case 'd': return this.set('date', value);
@@ -893,7 +986,7 @@ var handle = function(key, value){
 			value = +value;
 			if (value < 100) value += startCentury + (value < startYear ? 100 : 0);
 			return this.set('year', value);
-		case 'T':
+		case 'z':
 			if (value == 'Z') value = '+00';
 			var offset = value.match(/([+-])(\d{2}):?(\d{2})?/);
 			offset = (offset[1] + '1') * (offset[2] * 60 + (+offset[3] || 0)) + this.getTimezoneOffset();
@@ -910,14 +1003,16 @@ Date.defineParsers(
 	'%d%o( %b( %Y)?)?( %X)?', // "31st", "31st December", "31 Dec 1999", "31 Dec 1999 11:59pm"
 	'%b( %d%o)?( %Y)?( %X)?', // Same as above with month and day switched
 	'%Y %b( %d%o( %X)?)?', // Same as above with year coming first
-	'%o %b %d %X %T %Y' // "Thu Oct 22 08:11:23 +0000 2009"
+	'%o %b %d %X %z %Y', // "Thu Oct 22 08:11:23 +0000 2009"
+	'%T', // %H:%M:%S
+	'%H:%M( ?%p)?' // "11:05pm", "11:05 am" and "11:05"
 );
 
 Locale.addEvent('change', function(language){
 	if (Locale.get('Date')) recompile(language);
 }).fireEvent('change', Locale.getCurrent());
 
-})();
+}).call(this);
 
 
 /*
@@ -958,11 +1053,11 @@ String.implement({
 		if (!vars.length) return object;
 
 		vars.each(function(val){
-			var index = val.indexOf('='),
-				value = val.substr(index + 1),
-				keys = index < 0 ? [''] : val.substr(0, index).match(/([^\]\[]+|(\B)(?=\]))/g),
+			var index = val.indexOf('=') + 1,
+				value = index ? val.substr(index) : '',
+				keys = index ? val.substr(0, index - 1).match(/([^\]\[]+|(\B)(?=\]))/g) : [val],
 				obj = object;
-
+			if (!keys) return;
 			if (decodeValues) value = decodeURIComponent(value);
 			keys.each(function(key, i){
 				if (decodeKeys) key = decodeURIComponent(key);
@@ -1100,7 +1195,7 @@ var URI = this.URI = new Class({
 	},
 
 	get: function(part, base){
-		switch(part){
+		switch (part){
 			case 'value': return this.combine(this.parsed, base ? base.parsed : false);
 			case 'data' : return this.getData();
 		}
@@ -1158,7 +1253,7 @@ String.implement({
 
 });
 
-})();
+}).call(this);
 
 
 /*
@@ -1180,6 +1275,7 @@ authors:
 requires:
   - Core/String
   - Core/Array
+  - MooTools.More
 
 provides: [String.Extras]
 
@@ -1244,15 +1340,15 @@ tidy = {
 };
 
 var walk = function(string, replacements){
-	var result = string;
+	var result = string, key;
 	for (key in replacements) result = result.replace(replacements[key], key);
 	return result;
 };
 
 var getRegexForTag = function(tag, contents){
 	tag = tag || '';
-	var regstr = contents ? "<" + tag + "(?!\\w)[^>]*>([\\s\\S]*?)<\/" + tag + "(?!\\w)>" : "<\/?" + tag + "([^>]+)?>";
-	reg = new RegExp(regstr, "gi");
+	var regstr = contents ? "<" + tag + "(?!\\w)[^>]*>([\\s\\S]*?)<\/" + tag + "(?!\\w)>" : "<\/?" + tag + "([^>]+)?>",
+		reg = new RegExp(regstr, "gi");
 	return reg;
 };
 
@@ -1289,11 +1385,25 @@ String.implement({
 
 	tidy: function(){
 		return walk(this, tidy);
+	},
+
+	truncate: function(max, trail, atChar){
+		var string = this;
+		if (trail == null && arguments.length == 1) trail = '…';
+		if (string.length > max){
+			string = string.substring(0, max);
+			if (atChar){
+				var index = string.lastIndexOf(atChar);
+				if (index != -1) string = string.substr(0, index);
+			}
+			if (trail) string += trail;
+		}
+		return string;
 	}
 
 });
 
-})();
+}).call(this);
 
 
 /*
@@ -1462,6 +1572,7 @@ provides: [Class.Binds]
 */
 
 Class.Mutators.Binds = function(binds){
+	if (!this.prototype.initialize) this.implement('initialize', function(){});
 	return binds;
 };
 
@@ -1505,8 +1616,8 @@ Class.Occlude = new Class({
 	occlude: function(property, element){
 		element = document.id(element || this.element);
 		var instance = element.retrieve(property || this.property);
-		if (instance && this.occluded != null)
-			return this.occluded = instance;
+		if (instance && !this.occluded)
+			return (this.occluded = instance);
 
 		this.occluded = false;
 		element.store(property || this.property, this);
@@ -1545,17 +1656,13 @@ Class.refactor = function(original, refactors){
 	Object.each(refactors, function(item, name){
 		var origin = original.prototype[name];
 		if (origin && origin.$origin) origin = origin.$origin;
-		if (origin && typeof item == 'function'){
-			original.implement(name, function(){
-				var old = this.previous;
-				this.previous = origin;
-				var value = item.apply(this, arguments);
-				this.previous = old;
-				return value;
-			});
-		} else {
-			original.implement(name, item);
-		}
+		original.implement(name, (typeof item == 'function') ? function(){
+			var old = this.previous;
+			this.previous = origin || function(){};
+			var value = item.apply(this, arguments);
+			this.previous = old;
+			return value;
+		} : item);
 	});
 
 	return original;
@@ -1611,23 +1718,23 @@ var calculateEdgeSize = function(edge, styles){
 	return total;
 };
 
+var isVisible = function(el){
+	return !!(!el || el.offsetHeight || el.offsetWidth);
+};
+
 
 Element.implement({
 
 	measure: function(fn){
-		var visibility = function(el){
-			return !!(!el || el.offsetHeight || el.offsetWidth);
-		};
-		if (visibility(this)) return fn.apply(this);
+		if (isVisible(this)) return fn.call(this);
 		var parent = this.getParent(),
-			restorers = [],
 			toMeasure = [];
-		while (!visibility(parent) && parent != document.body){
+		while (!isVisible(parent) && parent != document.body){
 			toMeasure.push(parent.expose());
 			parent = parent.getParent();
 		}
-		var restore = this.expose();
-		var result = fn.apply(this);
+		var restore = this.expose(),
+			result = fn.call(this);
 		restore();
 		toMeasure.each(function(restore){
 			restore();
@@ -1694,7 +1801,8 @@ Element.implement({
 		}, options);
 
 		var styles = {},
-			size = {width: 0, height: 0};
+			size = {width: 0, height: 0},
+			dimensions;
 
 		if (options.mode == 'vertical'){
 			delete size.width;
@@ -1704,16 +1812,19 @@ Element.implement({
 			delete options.planes.height;
 		}
 
-
 		getStylesList(options.styles, options.planes).each(function(style){
 			styles[style] = this.getStyle(style).toInt();
 		}, this);
 
 		Object.each(options.planes, function(edges, plane){
 
-			var capitalized = plane.capitalize();
-			styles[plane] = this.getStyle(plane).toInt();
-			size['total' + capitalized] = styles[plane];
+			var capitalized = plane.capitalize(),
+				style = this.getStyle(plane);
+
+			if (style == 'auto' && !dimensions) dimensions = this.getDimensions();
+
+			style = styles[plane] = (style == 'auto') ? dimensions[plane] : style.toInt();
+			size['total' + capitalized] = style;
 
 			edges.each(function(edge){
 				var edgesize = calculateEdgeSize(edge, styles);
@@ -1728,7 +1839,7 @@ Element.implement({
 
 });
 
-})();
+}).call(this);
 
 
 /*
@@ -1854,7 +1965,7 @@ Element.implement({
 			prefX = options.offset.x,
 			winSize = window.getSize();
 
-		switch(options.position.x){
+		switch (options.position.x){
 			case 'left':
 				pos.x = left + prefX;
 				break;
@@ -1866,7 +1977,7 @@ Element.implement({
 				break;
 		}
 
-		switch(options.position.y){
+		switch (options.position.y){
 			case 'top':
 				pos.y = top + prefY;
 				break;
@@ -1881,7 +1992,7 @@ Element.implement({
 		if (options.edge){
 			var edgeOffset = {};
 
-			switch(options.edge.x){
+			switch (options.edge.x){
 				case 'left':
 					edgeOffset.x = 0;
 					break;
@@ -1893,7 +2004,7 @@ Element.implement({
 					break;
 			}
 
-			switch(options.edge.y){
+			switch (options.edge.y){
 				case 'top':
 					edgeOffset.y = 0;
 					break;
@@ -1956,7 +2067,7 @@ Element.implement({
 
 });
 
-})();
+}).call(this);
 
 
 /*
@@ -1997,7 +2108,7 @@ var IframeShim = new Class({
 		zIndex: null,
 		margin: 0,
 		offset: {x: 0, y: 0},
-		browsers: ((Browser.ie && Browser.version == 6) || (Browser.firefox && Browser.version < 3 && Browser.Platform.mac))
+		browsers: (Browser.ie6 || (Browser.firefox && Browser.version < 3 && Browser.Platform.mac))
 	},
 
 	property: 'IframeShim',
@@ -2128,7 +2239,7 @@ var Mask = new Class({
 		onShow: function(){},
 		onHide: function(){},
 		onDestroy: function(){},
-		onClick: function(){},
+		onClick: function(event){},
 		inject: {
 			where: 'after',
 			target: null,
@@ -2155,12 +2266,12 @@ var Mask = new Class({
 		this.element = new Element('div', {
 			'class': this.options['class'],
 			id: this.options.id || 'mask-' + String.uniqueID(),
-			styles: Object.merge(this.options.style, {
+			styles: Object.merge({}, this.options.style, {
 				display: 'none'
 			}),
 			events: {
-				click: function(){
-					this.fireEvent('click');
+				click: function(event){
+					this.fireEvent('click', event);
 					if (this.options.hideOnClick) this.hide();
 				}.bind(this)
 			}
@@ -2175,7 +2286,7 @@ var Mask = new Class({
 
 	inject: function(target, where){
 		where = where || (this.options.inject ? this.options.inject.where : '') || this.target == document.body ? 'inside' : 'after';
-		target = target || (this.options.inject ? this.options.inject.target : '') || this.target;
+		target = target || (this.options.inject && this.options.inject.target) || this.target;
 
 		this.element.inject(target, where);
 
@@ -2211,6 +2322,7 @@ var Mask = new Class({
 
 		var dim = this.target.getComputedSize(opt);
 		if (this.target == document.body){
+			this.element.setStyles({width: 0, height: 0});
 			var win = window.getScrollSize();
 			if (dim.totalHeight < win.y) dim.totalHeight = win.y;
 			if (dim.totalWidth < win.x) dim.totalWidth = win.x;
@@ -2526,7 +2638,7 @@ Element.implement({
 
 name: Events.Pseudos
 
-description: Adds the functionallity to add pseudo events
+description: Adds the functionality to add pseudo events
 
 license: MIT-style license
 
@@ -2545,7 +2657,6 @@ Events.Pseudos = function(pseudos, addEvent, removeEvent){
 	var storeKey = 'monitorEvents:';
 
 	var storageOf = function(object){
-
 		return {
 			store: object.store ? function(key, value){
 				object.store(storeKey + key, value);
@@ -2561,21 +2672,31 @@ Events.Pseudos = function(pseudos, addEvent, removeEvent){
 		};
 	};
 
-
 	var splitType = function(type){
-		if (type.indexOf(':') == -1) return null;
+		if (type.indexOf(':') == -1 || !pseudos) return null;
 
 		var parsed = Slick.parse(type).expressions[0][0],
-			parsedPseudos = parsed.pseudos;
+			parsedPseudos = parsed.pseudos,
+			l = parsedPseudos.length,
+			splits = [];
 
-		return (pseudos && pseudos[parsedPseudos[0].key]) ? {
-			event: parsed.tag,
-			value: parsedPseudos[0].value,
-			pseudo: parsedPseudos[0].key,
-			original: type
-		} : null;
+		while (l--) if (pseudos[parsedPseudos[l].key]){
+			splits.push({
+				event: parsed.tag,
+				value: parsedPseudos[l].value,
+				pseudo: parsedPseudos[l].key,
+				original: type
+			});
+		}
+
+		return splits.length ? splits : null;
 	};
 
+	var mergePseudoOptions = function(split){
+		return Object.merge.apply(this, split.map(function(item){
+			return pseudos[item.pseudo].options || {};
+		}));
+	};
 
 	return {
 
@@ -2585,22 +2706,31 @@ Events.Pseudos = function(pseudos, addEvent, removeEvent){
 
 			var storage = storageOf(this),
 				events = storage.retrieve(type, []),
-				pseudoArgs = Array.from(pseudos[split.pseudo]),
-				proxy = pseudoArgs[1];
+				eventType = split[0].event,
+				options = mergePseudoOptions(split),
+				stack = fn,
+				eventOptions = options[eventType] || {},
+				args = Array.slice(arguments, 2),
+				self = this,
+				monitor;
 
-			var self = this;
-			var monitor = function(){
-				pseudoArgs[0].call(self, split, fn, arguments, proxy);
-			};
+			if (eventOptions.args) args.append(Array.from(eventOptions.args));
+			if (eventOptions.base) eventType = eventOptions.base;
+			if (eventOptions.onAdd) eventOptions.onAdd(this);
+
+			split.each(function(item){
+				var stackFn = stack;
+				stack = function(){
+					(eventOptions.listener || pseudos[item.pseudo].listener).call(self, item, stackFn, arguments, monitor, options);
+				};
+			});
+			monitor = stack.bind(this);
 
 			events.include({event: fn, monitor: monitor});
 			storage.store(type, events);
 
-			var eventType = split.event;
-			if (proxy && proxy[eventType]) eventType = proxy[eventType].base;
-
-			addEvent.call(this, type, fn, internal);
-			return addEvent.call(this, eventType, monitor, internal);
+			addEvent.apply(this, [type, fn].concat(args));
+			return addEvent.apply(this, [eventType, monitor].concat(args));
 		},
 
 		removeEvent: function(type, fn){
@@ -2608,18 +2738,21 @@ Events.Pseudos = function(pseudos, addEvent, removeEvent){
 			if (!split) return removeEvent.call(this, type, fn);
 
 			var storage = storageOf(this),
-				events = storage.retrieve(type),
-				pseudoArgs = Array.from(pseudos[split.pseudo]),
-				proxy = pseudoArgs[1];
-
+				events = storage.retrieve(type);
 			if (!events) return this;
 
-			var eventType = split.event;
-			if (proxy && proxy[eventType]) eventType = proxy[eventType].base;
+			var eventType = split[0].event,
+				options = mergePseudoOptions(split),
+				eventOptions = options[eventType] || {},
+				args = Array.slice(arguments, 2);
 
-			removeEvent.call(this, type, fn);
+			if (eventOptions.args) args.append(Array.from(eventOptions.args));
+			if (eventOptions.base) eventType = eventOptions.base;
+			if (eventOptions.onRemove) eventOptions.onRemove(this);
+
+			removeEvent.apply(this, [type, fn].concat(args));
 			events.each(function(monitor, i){
-				if (!fn || monitor.event == fn) removeEvent.call(this, eventType, monitor.monitor);
+				if (!fn || monitor.event == fn) removeEvent.apply(this, [eventType, monitor.monitor].concat(args));
 				delete events[i];
 			}, this);
 
@@ -2635,21 +2768,51 @@ Events.Pseudos = function(pseudos, addEvent, removeEvent){
 
 var pseudos = {
 
-	once: function(split, fn, args){
-		fn.apply(this, args);
-		this.removeEvent(split.original, fn);
+	once: {
+		listener: function(split, fn, args, monitor){
+			fn.apply(this, args);
+			this.removeEvent(split.event, monitor)
+				.removeEvent(split.original, fn);
+		}
+	},
+
+	throttle: {
+		listener: function(split, fn, args){
+			if (!fn._throttled){
+				fn.apply(this, args);
+				fn._throttled = setTimeout(function(){
+					fn._throttled = false;
+				}, split.value || 250);
+			}
+		}
+	},
+
+	pause: {
+		listener: function(split, fn, args){
+			clearTimeout(fn._pause);
+			fn._pause = fn.delay(split.value || 250, this, args);
+		}
 	}
 
 };
 
-Events.definePseudo = function(key, fn){
-	pseudos[key] = fn;
+Events.definePseudo = function(key, listener){
+	pseudos[key] = Type.isFunction(listener) ? {listener: listener} : listener;
+	return this;
+};
+
+Events.lookupPseudo = function(key){
+	return pseudos[key];
 };
 
 var proto = Events.prototype;
 Events.implement(Events.Pseudos(pseudos, proto.addEvent, proto.removeEvent));
 
-})();
+['Request', 'Fx'].each(function(klass){
+	if (this[klass]) this[klass].implement(Events.prototype);
+});
+
+}).call(this);
 
 
 /*
@@ -2673,23 +2836,21 @@ provides: [Element.Event.Pseudos]
 
 (function(){
 
-var pseudos = {
+var pseudos = {},
+	copyFromEvents = ['once', 'throttle', 'pause'],
+	count = copyFromEvents.length;
 
-	once: function(split, fn, args){
-		fn.apply(this, args);
-		this.removeEvent(split.original, fn);
-	}
+while (count--) pseudos[copyFromEvents[count]] = Events.lookupPseudo(copyFromEvents[count]);
 
-};
-
-Event.definePseudo = function(key, fn, proxy){
-	pseudos[key] = [fn, proxy];
+Event.definePseudo = function(key, listener){
+	pseudos[key] = Type.isFunction(listener) ? {listener: listener} : listener;
+	return this;
 };
 
 var proto = Element.prototype;
 [Element, Window, Document].invoke('implement', Events.Pseudos(pseudos, proto.addEvent, proto.removeEvent));
 
-})();
+}).call(this);
 
 
 /*
@@ -2717,29 +2878,121 @@ provides: [Element.Delegation]
 ...
 */
 
+(function(){
 
-Event.definePseudo('relay', function(split, fn, args, proxy){
-	var event = args[0];
-	var check = proxy ? proxy.condition : null;
+var eventListenerSupport = !(window.attachEvent && !window.addEventListener),
+	nativeEvents = Element.NativeEvents;
 
-	for (var target = event.target; target && target != this; target = target.parentNode){
-		var finalTarget = document.id(target);
-		if (Slick.match(target, split.value) && (!check || check.call(finalTarget, event))){
-			if (finalTarget) fn.call(finalTarget, event, finalTarget);
-			return;
+nativeEvents.focusin = 2;
+nativeEvents.focusout = 2;
+
+var check = function(split, target, event){
+	var elementEvent = Element.Events[split.event], condition;
+	if (elementEvent) condition = elementEvent.condition;
+	return Slick.match(target, split.value) && (!condition || condition.call(target, event));
+};
+
+var formObserver = function(eventName){
+
+	var $delegationKey = '$delegation:';
+
+	return {
+		base: 'focusin',
+
+		onRemove: function(element){
+			element.retrieve($delegationKey + 'forms', []).each(function(el){
+				el.retrieve($delegationKey + 'listeners', []).each(function(listener){
+					el.removeEvent(eventName, listener);
+				});
+				el.eliminate($delegationKey + eventName + 'listeners')
+					.eliminate($delegationKey + eventName + 'originalFn');
+			});
+		},
+
+		listener: function(split, fn, args, monitor, options){
+			var event = args[0],
+				forms = this.retrieve($delegationKey + 'forms', []),
+				target = event.target,
+				form = (target.get('tag') == 'form') ? target : event.target.getParent('form'),
+				formEvents = form.retrieve($delegationKey + 'originalFn', []),
+				formListeners = form.retrieve($delegationKey + 'listeners', []);
+
+			forms.include(form);
+			this.store($delegationKey + 'forms', forms);
+
+			if (!formEvents.contains(fn)){
+				var formListener = function(event){
+					if (check(split, this, event)) fn.call(this, event);
+				};
+				form.addEvent(eventName, formListener);
+
+				formEvents.push(fn);
+				formListeners.push(formListener);
+
+				form.store($delegationKey + eventName + 'originalFn', formEvents)
+					.store($delegationKey + eventName + 'listeners', formListeners);
+			}
 		}
-	}
+	};
+};
 
-}, {
+var inputObserver = function(eventName){
+	return {
+		base: 'focusin',
+		listener: function(split, fn, args){
+			var events = {blur: function(){
+				this.removeEvents(events);
+			}};
+			events[eventName] = function(event){
+				if (check(split, this, event)) fn.call(this, event);
+			};
+			args[0].target.addEvents(events);
+		}
+	};
+};
+
+var eventOptions = {
 	mouseenter: {
-		base: 'mouseover',
-		condition: Element.Events.mouseenter.condition
+		base: 'mouseover'
 	},
 	mouseleave: {
-		base: 'mouseout',
-		condition: Element.Events.mouseleave.condition
+		base: 'mouseout'
+	},
+	focus: {
+		base: 'focus' + (eventListenerSupport ? '' : 'in'),
+		args: [true]
+	},
+	blur: {
+		base: eventListenerSupport ? 'blur' : 'focusout',
+		args: [true]
 	}
+};
+
+if (!eventListenerSupport) Object.append(eventOptions, {
+	submit: formObserver('submit'),
+	reset: formObserver('reset'),
+	change: inputObserver('change'),
+	select: inputObserver('select')
 });
+
+
+Event.definePseudo('relay', {
+	listener: function(split, fn, args, monitor, options){
+		var event = args[0];
+
+		for (var target = event.target; target && target != this; target = target.parentNode){
+			var finalTarget = document.id(target);
+			if (check(split, finalTarget, event)){
+				if (finalTarget) fn.call(finalTarget, event, finalTarget);
+				return;
+			}
+		}
+	},
+	options: eventOptions
+});
+
+}).call(this);
+
 
 
 /*
@@ -2779,10 +3032,10 @@ if (!window.Form) window.Form = {};
 
 		Implements: [Options, Events, Class.Occlude],
 
-		options: {
-			//onFailure: function(){},
-			//onSuccess: #function(){}, //aliased to onComplete,
-			//onSend: function(){}
+		options: {/*
+			onFailure: function(){},
+			onSuccess: function(){}, // aliased to onComplete,
+			onSend: function(){}*/
 			requestOptions: {
 				evalScripts: true,
 				useSpinner: true,
@@ -2804,7 +3057,9 @@ if (!window.Form) window.Form = {};
 			this.makeRequest();
 			if (this.options.resetForm){
 				this.request.addEvent('success', function(){
-					Function.attempt(function(){ this.element.reset(); }.bind(this));
+					Function.attempt(function(){
+						this.element.reset();
+					}.bind(this));
 					if (window.OverText) OverText.update();
 				}.bind(this));
 			}
@@ -2837,8 +3092,8 @@ if (!window.Form) window.Form = {};
 		},
 
 		attach: function(attach){
-			attach = attach != null ? attach : true;
-			method = attach ? 'addEvent' : 'removeEvent';
+			if (attach == null) attach = true;
+			var method = attach ? 'addEvent' : 'removeEvent';
 
 			this.element[method]('click:relay(button, input[type=submit])', this.saveClickedButton.bind(this));
 
@@ -2864,17 +3119,17 @@ if (!window.Form) window.Form = {};
 			return this;
 		},
 
-		onFormValidate: function(valid, form, e){
+		onFormValidate: function(valid, form, event){
 			//if there's no event, then this wasn't a submit event
-			if (!e) return;
+			if (!event) return;
 			var fv = this.element.retrieve('validator');
 			if (valid || (fv && !fv.options.stopOnFailure)){
-				if (e && e.stop) e.stop();
+				event.stop();
 				this.send();
 			}
 		},
 
-		onSubmit: function(e){
+		onSubmit: function(event){
 			var fv = this.element.retrieve('validator');
 			if (fv){
 				//form validator was created after Form.Request
@@ -2883,13 +3138,12 @@ if (!window.Form) window.Form = {};
 				this.element.validate();
 				return;
 			}
-			if (e) e.stop();
+			if (event) event.stop();
 			this.send();
 		},
 
 		saveClickedButton: function(event, target){
-			if (!this.options.sendButtonClicked) return;
-			if (!target.get('name')) return;
+			if (!this.options.sendButtonClicked || !target.get('name')) return;
 			this.options.extraData[target.get('name')] = target.get('value') || true;
 			this.clickedCleaner = function(){
 				delete this.options.extraData[target.get('name')];
@@ -2900,12 +3154,17 @@ if (!window.Form) window.Form = {};
 		clickedCleaner: function(){},
 
 		send: function(){
-			var str = this.element.toQueryString().trim();
-			var data = Object.toQueryString(this.options.extraData);
+			var str = this.element.toQueryString().trim(),
+				data = Object.toQueryString(this.options.extraData);
+
 			if (str) str += "&" + data;
 			else str = data;
+
 			this.fireEvent('send', [this.element, str.parseQueryString()]);
-			this.request.send({data: str, url: this.element.get("action")});
+			this.request.send({
+				data: str,
+				url: this.options.requestOptions.url || this.element.get('action')
+			});
 			this.clickedCleaner();
 			return this;
 		}
@@ -2915,9 +3174,9 @@ if (!window.Form) window.Form = {};
 	Element.Properties.formRequest = {
 
 		set: function(){
-			var opt = Array.link(arguments, {options: Type.isObject, update: Type.isElement, updateId: Type.isString});
-			var update = opt.update || opt.updateId;
-			var updater = this.retrieve('form.request');
+			var opt = Array.link(arguments, {options: Type.isObject, update: Type.isElement, updateId: Type.isString}),
+				update = opt.update || opt.updateId,
+				updater = this.retrieve('form.request');
 			if (update){
 				if (updater) updater.update = document.id(update);
 				this.store('form.request:update', update);
@@ -2930,8 +3189,8 @@ if (!window.Form) window.Form = {};
 		},
 
 		get: function(){
-			var opt = Array.link(arguments, {options: Type.isObject, update: Type.isElement, updateId: Type.isString});
-			var update = opt.update || opt.updateId;
+			var opt = Array.link(arguments, {options: Type.isObject, update: Type.isElement, updateId: Type.isString}),
+				update = opt.update || opt.updateId;
 			if (opt.options || update || !this.retrieve('form.request')){
 				if (opt.options || !this.retrieve('form.request:options')) this.set('form.request', opt.options);
 				if (update) this.set('form.request', update);
@@ -2951,7 +3210,7 @@ if (!window.Form) window.Form = {};
 
 	});
 
-})();
+}).call(this);
 
 
 /*
@@ -3018,11 +3277,14 @@ Element.implement({
 Document.implement({
 
 	clearSelection: function(){
-		if (document.selection && document.selection.empty){
-			document.selection.empty();
-		} else if (window.getSelection){
+		if (window.getSelection){
 			var selection = window.getSelection();
 			if (selection && selection.removeAllRanges) selection.removeAllRanges();
+		} else if (document.selection && document.selection.empty){
+			try {
+				//IE fails here if selected element is not in dom
+				document.selection.empty();
+			} catch(e){}
 		}
 	}
 
@@ -3052,6 +3314,22 @@ provides: [Fx.Reveal]
 
 ...
 */
+
+(function(){
+
+
+var hideTheseOf = function(object){
+	var hideThese = object.options.hideInputs;
+	if (window.OverText){
+		var otClasses = [null];
+		OverText.each(function(ot){
+			otClasses.include('.' + ot.options.labelClass);
+		});
+		if (otClasses) hideThese += otClasses.join(', ');
+	}
+	return (hideThese) ? object.element.getElements(hideThese) : null;
+};
+
 
 Fx.Reveal = new Class({
 
@@ -3098,7 +3376,7 @@ Fx.Reveal = new Class({
 					overflow: 'hidden'
 				});
 
-				var hideThese = this.options.hideInputs ? this.element.getElements(this.options.hideInputs) : null;
+				var hideThese = hideTheseOf(this);
 				if (hideThese) hideThese.setStyle('visibility', 'hidden');
 
 				this.$chain.unshift(function(){
@@ -3160,7 +3438,7 @@ Fx.Reveal = new Class({
 
 				this.element.setStyles(zero);
 
-				var hideThese = this.options.hideInputs ? this.element.getElements(this.options.hideInputs) : null;
+				var hideThese = hideTheseOf(this);
 				if (hideThese) hideThese.setStyle('visibility', 'hidden');
 
 				this.$chain.unshift(function(){
@@ -3198,7 +3476,7 @@ Fx.Reveal = new Class({
 
 	cancel: function(){
 		this.parent.apply(this, arguments);
-		this.element.style.cssText = this.cssText;
+		if (this.cssText != null) this.element.style.cssText = this.cssText;
 		this.hiding = false;
 		this.showing = false;
 		return this;
@@ -3257,6 +3535,8 @@ Element.implement({
 	}
 
 });
+
+}).call(this);
 
 
 /*
@@ -3412,7 +3692,7 @@ Locale.define('en-US', 'FormValidator', {
 	dateSuchAs: 'Please enter a valid date such as {date}',
 	dateInFormatMDY: 'Please enter a valid date such as MM/DD/YYYY (i.e. "12/31/1999")',
 	email: 'Please enter a valid email address. For example "fred@domain.com".',
-	url: 'Please enter a valid URL such as http://www.google.com.',
+	url: 'Please enter a valid URL such as http://www.example.com.',
 	currencyDollar: 'Please enter a valid $ amount. For example $100.00 .',
 	oneRequired: 'Please enter something for at least one of these inputs.',
 	errorPrefix: 'Error: ',
@@ -3470,13 +3750,13 @@ provides: [Form.Validator, InputValidator, FormValidator.BaseValidators]
 */
 if (!window.Form) window.Form = {};
 
-var InputValidator = new Class({
+var InputValidator = this.InputValidator = new Class({
 
 	Implements: [Options],
 
 	options: {
 		errorMsg: 'Validation failed.',
-		test: function(field){return true;}
+		test: Function.from(true)
 	},
 
 	initialize: function(className, options){
@@ -3485,22 +3765,31 @@ var InputValidator = new Class({
 	},
 
 	test: function(field, props){
-		if (document.id(field)) return this.options.test(document.id(field), props || this.getProps(field));
-		else return false;
+		field = document.id(field);
+		return (field) ? this.options.test(field, props || this.getProps(field)) : false;
 	},
 
 	getError: function(field, props){
+		field = document.id(field);
 		var err = this.options.errorMsg;
-		if (typeOf(err) == 'function') err = err(document.id(field), props || this.getProps(field));
+		if (typeOf(err) == 'function') err = err(field, props || this.getProps(field));
 		return err;
 	},
 
 	getProps: function(field){
-		if (!document.id(field)) return {};
-		return field.get('validatorProps');
+		field = document.id(field);
+		return (field) ? field.get('validatorProps') : {};
 	}
 
 });
+
+Element.Properties.validators = {
+
+	get: function(){
+		return (this.get('data-validators') || this.className).clean().split(' ');
+	}
+
+};
 
 Element.Properties.validatorProps = {
 
@@ -3511,14 +3800,14 @@ Element.Properties.validatorProps = {
 	get: function(props){
 		if (props) this.set(props);
 		if (this.retrieve('$moo:validatorProps')) return this.retrieve('$moo:validatorProps');
-		if (this.getProperty('$moo:validatorProps')){
+		if (this.getProperty('data-validator-properties') || this.getProperty('validatorProps')){
 			try {
-				this.store('$moo:validatorProps', JSON.decode(this.getProperty('$moo:validatorProps')));
+				this.store('$moo:validatorProps', JSON.decode(this.getProperty('validatorProps') || this.getProperty('data-validator-properties')));
 			}catch(e){
 				return {};
 			}
 		} else {
-			var vals = this.get('class').split(' ').filter(function(cls){
+			var vals = this.get('validators').filter(function(cls){
 				return cls.test(':');
 			});
 			if (!vals.length){
@@ -3543,7 +3832,7 @@ Element.Properties.validatorProps = {
 
 Form.Validator = new Class({
 
-	Implements:[Options, Events],
+	Implements: [Options, Events],
 
 	Binds: ['onSubmit'],
 
@@ -3602,8 +3891,7 @@ Form.Validator = new Class({
 	},
 
 	onSubmit: function(event){
-		if (!this.validate(event) && event) event.preventDefault();
-		else this.reset();
+		if (this.validate(event)) this.reset();
 	},
 
 	reset: function(){
@@ -3614,7 +3902,9 @@ Form.Validator = new Class({
 	validate: function(event){
 		var result = this.getFields().map(function(field){
 			return this.validateField(field, true);
-		}, this).every(function(v){ return v;});
+		}, this).every(function(v){
+			return v;
+		});
 		this.fireEvent('formValidate', [result, this.element, event]);
 		if (this.options.stopOnFailure && !result && event) event.preventDefault();
 		return result;
@@ -3630,32 +3920,33 @@ Form.Validator = new Class({
 			warned = this.element.getElement('.warning');
 		}
 		if (field && (!failed || force || field.hasClass('validation-failed') || (failed && !this.options.serial))){
-			var validators = field.className.split(' ').some(function(cn){
+			var validationTypes = field.get('validators');
+			var validators = validationTypes.some(function(cn){
 				return this.getValidator(cn);
 			}, this);
 			var validatorsFailed = [];
-			field.className.split(' ').each(function(className){
+			validationTypes.each(function(className){
 				if (className && !this.test(className, field)) validatorsFailed.include(className);
 			}, this);
 			passed = validatorsFailed.length === 0;
-			if (validators && !field.hasClass('warnOnly')){
+			if (validators && !this.hasValidator(field, 'warnOnly')){
 				if (passed){
 					field.addClass('validation-passed').removeClass('validation-failed');
-					this.fireEvent('elementPass', field);
+					this.fireEvent('elementPass', [field]);
 				} else {
 					field.addClass('validation-failed').removeClass('validation-passed');
 					this.fireEvent('elementFail', [field, validatorsFailed]);
 				}
 			}
 			if (!warned){
-				var warnings = field.className.split(' ').some(function(cn){
-					if (cn.test('^warn-') || field.hasClass('warnOnly'))
+				var warnings = validationTypes.some(function(cn){
+					if (cn.test('^warn'))
 						return this.getValidator(cn.replace(/^warn-/,''));
 					else return null;
 				}, this);
 				field.removeClass('warning');
-				var warnResult = field.className.split(' ').map(function(cn){
-					if (cn.test('^warn-') || field.hasClass('warnOnly'))
+				var warnResult = validationTypes.map(function(cn){
+					if (cn.test('^warn'))
 						return this.test(cn.replace(/^warn-/,''), field, true);
 					else return null;
 				}, this);
@@ -3668,18 +3959,22 @@ Form.Validator = new Class({
 		field = document.id(field);
 		if ((this.options.ignoreHidden && !field.isVisible()) || (this.options.ignoreDisabled && field.get('disabled'))) return true;
 		var validator = this.getValidator(className);
-		warn = warn != null ? warn : false;
-		if (field.hasClass('warnOnly')) warn = true;
-		var isValid = field.hasClass('ignoreValidation') || (validator ? validator.test(field) : true);
-		if (validator) this.fireEvent('elementValidate', [isValid, field, className, warn]);
+		if (warn != null) warn = false;
+		if (this.hasValidator(field, 'warnOnly')) warn = true;
+		var isValid = this.hasValidator(field, 'ignoreValidation') || (validator ? validator.test(field) : true);
+		if (validator && field.isVisible()) this.fireEvent('elementValidate', [isValid, field, className, warn]);
 		if (warn) return true;
 		return isValid;
+	},
+
+	hasValidator: function(field, value){
+		return field.get('validators').contains(value);
 	},
 
 	resetField: function(field){
 		field = document.id(field);
 		if (field){
-			field.className.split(' ').each(function(className){
+			field.get('validators').each(function(className){
 				if (className.test('^warn-')) className = className.replace(/^warn-/, '');
 				field.removeClass('validation-failed');
 				field.removeClass('warning');
@@ -3796,8 +4091,7 @@ Form.Validator.addAllThese([
 			else return '';
 		},
 		test: function(element, props){
-			//if the value is <= than the maxLength value, element passes test
-			return (element.get('value').length <= (props.maxLength || 10000));
+			return element.get('value').length <= (props.maxLength || 10000);
 		}
 	}],
 
@@ -3848,28 +4142,40 @@ Form.Validator.addAllThese([
 		},
 		test: function(element, props){
 			if (Form.Validator.getValidator('IsEmpty').test(element)) return true;
-			var d;
-			if (Date.parse){
-				var format = props.dateFormat || '%x';
-				d = Date.parse(element.get('value'));
-				var formatted = d.format(format);
+			var dateLocale = Locale.getCurrent().sets.Date,
+				dateNouns = new RegExp([dateLocale.days, dateLocale.days_abbr, dateLocale.months, dateLocale.months_abbr].flatten().join('|'), 'i'),
+				value = element.get('value'),
+				wordsInValue = value.match(/[a-z]+/gi);
+
+				if (wordsInValue && !wordsInValue.every(dateNouns.exec, dateNouns)) return false;
+
+				var date = Date.parse(value),
+					format = props.dateFormat || '%x',
+					formatted = date.format(format);
+
 				if (formatted != 'invalid date') element.set('value', formatted);
-				return !isNaN(d);
-			} else {
-				var regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-				if (!regex.test(element.get('value'))) return false;
-				d = new Date(element.get('value').replace(regex, '$1/$2/$3'));
-				return (parseInt(RegExp.$1, 10) == (1 + d.getMonth())) &&
-					(parseInt(RegExp.$2, 10) == d.getDate()) &&
-					(parseInt(RegExp.$3, 10) == d.getFullYear());
-			}
+				return date.isValid();
 		}
 	}],
 
 	['validate-email', {
 		errorMsg: Form.Validator.getMsg.pass('email'),
 		test: function(element){
-			return Form.Validator.getValidator('IsEmpty').test(element) || (/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i).test(element.get('value'));
+			/*
+			var chars = "[a-z0-9!#$%&'*+/=?^_`{|}~-]",
+				local = '(?:' + chars + '\\.?){0,63}' + chars,
+
+				label = '[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?',
+				hostname = '(?:' + label + '\\.)*' + label;
+
+				octet = '(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)',
+				ipv4 = '\\[(?:' + octet + '\\.){3}' + octet + '\\]',
+
+				domain = '(?:' + hostname + '|' + ipv4 + ')';
+
+			var regex = new RegExp('^' + local + '@' + domain + '$', 'i');
+			*/
+			return Form.Validator.getValidator('IsEmpty').test(element) || (/^(?:[a-z0-9!#$%&'*+\/=?^_`{|}~-]\.?){0,63}[a-z0-9!#$%&'*+\/=?^_`{|}~-]@(?:(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\])$/i).test(element.get('value'));
 		}
 	}],
 
@@ -3883,10 +4189,6 @@ Form.Validator.addAllThese([
 	['validate-currency-dollar', {
 		errorMsg: Form.Validator.getMsg.pass('currencyDollar'),
 		test: function(element){
-			// [$]1[##][,###]+[.##]
-			// [$]1###+[.##]
-			// [$]0.##
-			// [$].##
 			return Form.Validator.getValidator('IsEmpty').test(element) || (/^\$?\-?([1-9]{1}[0-9]{0,2}(\,[0-9]{3})*(\.[0-9]{0,2})?|[1-9]{1}\d*(\.[0-9]{0,2})?|0(\.[0-9]{0,2})?|(\.[0-9]{1,2})?)$/).test(element.get('value'));
 		}
 	}],
@@ -3907,17 +4209,16 @@ Form.Validator.addAllThese([
 Element.Properties.validator = {
 
 	set: function(options){
-		var validator = this.retrieve('validator');
-		if (validator) validator.setOptions(options);
-		return this.store('$moo:validator:options', options);
+		this.get('validator').setOptions(options);
 	},
 
-	get: function(options){
-		if (options || !this.retrieve('validator')){
-			if (options || !this.retrieve('$moo:validator:options')) this.set('validator', options);
-			this.store('validator', new Form.Validator(this, this.retrieve('$moo:validator:options')));
+	get: function(){
+		var validator = this.retrieve('validator');
+		if (!validator){
+			validator = new Form.Validator(this);
+			this.store('validator', validator);
 		}
-		return this.retrieve('validator');
+		return validator;
 	}
 
 };
@@ -3926,14 +4227,18 @@ Element.implement({
 
 	validate: function(options){
 		if (options) this.set('validator', options);
-		return this.get('validator', options).validate();
+		return this.get('validator').validate();
 	}
 
 });
+
+
 //<1.2compat>
 //legacy
 var FormValidator = Form.Validator;
 //</1.2compat>
+
+
 
 
 /*
@@ -4021,10 +4326,15 @@ Form.Validator.Inline = new Class({
 
 	showAdvice: function(className, field){
 		var advice = this.getAdvice(className, field);
-		if (advice && !field.retrieve('$moo:' + this.getPropName(className))
-				&& (advice.getStyle('display') == 'none'
-				|| advice.getStyle('visiblity') == 'hidden'
-				|| advice.getStyle('opacity') == 0)){
+		if (
+			advice &&
+			!field.retrieve('$moo:' + this.getPropName(className)) &&
+			(
+				advice.getStyle('display') == 'none' ||
+				advice.getStyle('visiblity') == 'hidden' ||
+				advice.getStyle('opacity') == 0
+			)
+		){
 			field.store('$moo:' + this.getPropName(className), true);
 			this.options.showError(advice);
 			this.fireEvent('showAdvice', [field, advice, className]);
@@ -4048,7 +4358,7 @@ Form.Validator.Inline = new Class({
 		field = document.id(field);
 		if (!field) return this;
 		this.parent(field);
-		field.className.split(' ').each(function(className){
+		field.get('validators').each(function(className){
 			this.hideAdvice(className, field);
 		}, this);
 		return this;
@@ -4057,7 +4367,7 @@ Form.Validator.Inline = new Class({
 	getAllAdviceMessages: function(field, force){
 		var advice = [];
 		if (field.hasClass('ignoreValidation') && !force) return advice;
-		var validators = field.className.split(' ').some(function(cn){
+		var validators = field.get('validators').some(function(cn){
 			var warner = cn.test('^warn-') || field.hasClass('warnOnly');
 			if (warner) cn = cn.replace(/^warn-/, '');
 			var validator = this.getValidator(cn);
@@ -4374,10 +4684,10 @@ requires:
   - Core/Options
   - Core/Events
   - Core/Element.Event
-  - /Class.Binds
-  - /Class.Occlude
-  - /Element.Position
-  - /Element.Shortcuts
+  - Class.Binds
+  - Class.Occlude
+  - Element.Position
+  - Element.Shortcuts
 
 provides: [OverText]
 
@@ -4396,6 +4706,7 @@ var OverText = new Class({
 		onTextHide: function(textEl, inputEl){},
 		onTextShow: function(textEl, inputEl){}, */
 		element: 'label',
+		labelClass: 'overTxtLabel',
 		positionOptions: {
 			position: 'upperLeft',
 			edge: 'upperLeft',
@@ -4412,13 +4723,15 @@ var OverText = new Class({
 	property: 'OverText',
 
 	initialize: function(element, options){
-		this.element = document.id(element);
+		element = this.element = document.id(element);
+
 		if (this.occlude()) return this.occluded;
 		this.setOptions(options);
-		this.attach(this.element);
+
+		this.attach(element);
 		OverText.instances.push(this);
+
 		if (this.options.poll) this.poll();
-		return this;
 	},
 
 	toElement: function(){
@@ -4426,40 +4739,44 @@ var OverText = new Class({
 	},
 
 	attach: function(){
-		var val = this.options.textOverride || this.element.get('alt') || this.element.get('title');
-		if (!val) return;
-		this.text = new Element(this.options.element, {
-			'class': 'overTxtLabel',
+		var element = this.element,
+			options = this.options,
+			value = options.textOverride || element.get('alt') || element.get('title');
+
+		if (!value) return this;
+
+		var text = this.text = new Element(options.element, {
+			'class': options.labelClass,
 			styles: {
 				lineHeight: 'normal',
 				position: 'absolute',
 				cursor: 'text'
 			},
-			html: val,
+			html: value,
 			events: {
-				click: this.hide.pass(this.options.element == 'label', this)
+				click: this.hide.pass(options.element == 'label', this)
 			}
-		}).inject(this.element, 'after');
-		if (this.options.element == 'label'){
-			if (!this.element.get('id')) this.element.set('id', 'input_' + new Date().getTime());
-			this.text.set('for', this.element.get('id'));
+		}).inject(element, 'after');
+
+		if (options.element == 'label'){
+			if (!element.get('id')) element.set('id', 'input_' + String.uniqueID());
+			text.set('for', element.get('id'));
 		}
 
-		if (this.options.wrap){
-			this.textHolder = new Element('div', {
+		if (options.wrap){
+			this.textHolder = new Element('div.overTxtWrapper', {
 				styles: {
 					lineHeight: 'normal',
 					position: 'relative'
-				},
-				'class':'overTxtWrapper'
-			}).adopt(this.text).inject(this.element, 'before');
+				}
+			}).grab(text).inject(element, 'before');
 		}
 
 		return this.enable();
 	},
 
 	destroy: function(){
-		this.element.eliminate('OverTextDiv').eliminate('OverText');
+		this.element.eliminate(this.property); // Class.Occlude storage
 		this.disable();
 		if (this.text) this.text.destroy();
 		if (this.textHolder) this.textHolder.destroy();
@@ -4491,7 +4808,7 @@ var OverText = new Class({
 
 	wrap: function(){
 		if (this.options.element == 'label'){
-			if (!this.element.get('id')) this.element.set('id', 'input_' + new Date().getTime());
+			if (!this.element.get('id')) this.element.set('id', 'input_' + String.uniqueID());
 			this.text.set('for', this.element.get('id'));
 		}
 	},
@@ -4506,11 +4823,14 @@ var OverText = new Class({
 		//pause on focus
 		//resumeon blur
 		if (this.poller && !stop) return this;
-		var test = function(){
-			if (!this.pollingPaused) this.assert(true);
-		}.bind(this);
-		if (stop) clearInterval(this.poller);
-		else this.poller = test.periodical(this.options.pollInterval, this);
+		if (stop){
+			clearInterval(this.poller);
+		} else {
+			this.poller = (function(){
+				if (!this.pollingPaused) this.assert(true);
+			}).periodical(this.options.pollInterval, this);
+		}
+
 		return this;
 	},
 
@@ -4520,8 +4840,8 @@ var OverText = new Class({
 	},
 
 	focus: function(){
-		if (this.text && (!this.text.isDisplayed() || this.element.get('disabled'))) return;
-		this.hide();
+		if (this.text && (!this.text.isDisplayed() || this.element.get('disabled'))) return this;
+		return this.hide();
 	},
 
 	hide: function(suppressFocus, force){
@@ -4549,19 +4869,22 @@ var OverText = new Class({
 		return this;
 	},
 
-	assert: function(suppressFocus){
-		this[this.test() ? 'show' : 'hide'](suppressFocus);
+	test: function(){
+		return !this.element.get('value');
 	},
 
-	test: function(){
-		var v = this.element.get('value');
-		return !v;
+	assert: function(suppressFocus){
+		return this[this.test() ? 'show' : 'hide'](suppressFocus);
 	},
 
 	reposition: function(){
 		this.assert(true);
 		if (!this.element.isVisible()) return this.stopPolling().hide();
-		if (this.text && this.test()) this.text.position(Object.merge(this.options.positionOptions, {relativeTo: this.element}));
+		if (this.text && this.test()){
+			this.text.position(Object.merge(this.options.positionOptions, {
+				relativeTo: this.element
+			}));
+		}
 		return this;
 	}
 
@@ -4572,9 +4895,8 @@ OverText.instances = [];
 Object.append(OverText, {
 
 	each: function(fn){
-		return OverText.instances.map(function(ot, i){
-			if (ot.element && ot.text) return fn.apply(OverText, [ot, i]);
-			return null; //the input or the text was destroyed
+		return OverText.instances.each(function(ot, i){
+			if (ot.element && ot.text) fn.call(OverText, ot, i);
 		});
 	},
 
@@ -4602,11 +4924,6 @@ Object.append(OverText, {
 
 });
 
-if (window.Fx && Fx.Reveal){
-	Fx.Reveal.implement({
-		hideInputs: Browser.ie ? 'select, input, textarea, object, embed, .overTxtLabel' : false
-	});
-}
 
 
 /*
@@ -4742,7 +5059,7 @@ Fx.Scroll = new Class({
 	set: function(){
 		var now = Array.flatten(arguments);
 		if (Browser.firefox) now = [Math.round(now[0]), Math.round(now[1])]; // not needed anymore in newer firefox versions
-		this.element.scrollTo(now[0] + this.options.offset.x, now[1] + this.options.offset.y);
+		this.element.scrollTo(now[0], now[1]);
 	},
 
 	compute: function(from, to, delta){
@@ -4753,45 +5070,54 @@ Fx.Scroll = new Class({
 
 	start: function(x, y){
 		if (!this.check(x, y)) return this;
+		var scroll = this.element.getScroll();
+		return this.parent([scroll.x, scroll.y], [x, y]);
+	},
+
+	calculateScroll: function(x, y){
 		var element = this.element,
 			scrollSize = element.getScrollSize(),
 			scroll = element.getScroll(),
-			size = element.getSize();
+			size = element.getSize(),
+			offset = this.options.offset,
 			values = {x: x, y: y};
 
 		for (var z in values){
 			if (!values[z] && values[z] !== 0) values[z] = scroll[z];
 			if (typeOf(values[z]) != 'number') values[z] = scrollSize[z] - size[z];
-			values[z] += this.options.offset[z];
+			values[z] += offset[z];
 		}
 
-		return this.parent([scroll.x, scroll.y], [values.x, values.y]);
+		return [values.x, values.y];
 	},
 
 	toTop: function(){
-		return this.start(false, 0);
+		return this.start.apply(this, this.calculateScroll(false, 0));
 	},
 
 	toLeft: function(){
-		return this.start(0, false);
+		return this.start.apply(this, this.calculateScroll(0, false));
 	},
 
 	toRight: function(){
-		return this.start('right', false);
+		return this.start.apply(this, this.calculateScroll('right', false));
 	},
 
 	toBottom: function(){
-		return this.start(false, 'bottom');
+		return this.start.apply(this, this.calculateScroll(false, 'bottom'));
 	},
 
-	toElement: function(el){
-		var position = document.id(el).getPosition(this.element),
-			scroll = isBody(this.element) ? {x: 0, y: 0} : this.element.getScroll();
-		return this.start(position.x + scroll.x, position.y + scroll.y);
+	toElement: function(el, axes){
+		axes = axes ? Array.from(axes) : ['x', 'y'];
+		var scroll = isBody(this.element) ? {x: 0, y: 0} : this.element.getScroll();
+		var position = Object.map(document.id(el).getPosition(this.element), function(value, axis){
+			return axes.contains(axis) ? value + scroll[axis] : false;
+		});
+		return this.start.apply(this, this.calculateScroll(position.x, position.y));
 	},
 
-	scrollIntoView: function(el, axes, offset){
-		axes = axes ? Array.from(axes) : ['x','y'];
+	toElementEdge: function(el, axes, offset){
+		axes = axes ? Array.from(axes) : ['x', 'y'];
 		el = document.id(el);
 		var to = {},
 			position = el.getPosition(this.element),
@@ -4803,7 +5129,7 @@ Fx.Scroll = new Class({
 				y: position.y + size.y
 			};
 
-		['x','y'].each(function(axis){
+		['x', 'y'].each(function(axis){
 			if (axes.contains(axis)){
 				if (edge[axis] > scroll[axis] + containerSize[axis]) to[axis] = edge[axis] - containerSize[axis];
 				if (position[axis] < scroll[axis]) to[axis] = position[axis];
@@ -4816,7 +5142,7 @@ Fx.Scroll = new Class({
 		return this;
 	},
 
-	scrollToCenter: function(el, axes, offset){
+	toElementCenter: function(el, axes, offset){
 		axes = axes ? Array.from(axes) : ['x', 'y'];
 		el = document.id(el);
 		var to = {},
@@ -4825,9 +5151,9 @@ Fx.Scroll = new Class({
 			scroll = this.element.getScroll(),
 			containerSize = this.element.getSize();
 
-		['x','y'].each(function(axis){
+		['x', 'y'].each(function(axis){
 			if (axes.contains(axis)){
-				to[axis] = position[axis] - (containerSize[axis] - size[axis])/2;
+				to[axis] = position[axis] - (containerSize[axis] - size[axis]) / 2;
 			}
 			if (to[axis] == null) to[axis] = scroll[axis];
 			if (offset && offset[axis]) to[axis] = to[axis] + offset[axis];
@@ -4839,11 +5165,194 @@ Fx.Scroll = new Class({
 
 });
 
+//<1.2compat>
+Fx.Scroll.implement({
+	scrollToCenter: function(){
+		return this.toElementCenter.apply(this, arguments);
+	},
+	scrollIntoView: function(){
+		return this.toElementEdge.apply(this, arguments);
+	}
+});
+//</1.2compat>
+
 function isBody(element){
 	return (/^(?:body|html)$/i).test(element.tagName);
+}
+
+}).call(this);
+
+
+/*
+---
+
+script: Fx.Slide.js
+
+name: Fx.Slide
+
+description: Effect to slide an element in and out of view.
+
+license: MIT-style license
+
+authors:
+  - Valerio Proietti
+
+requires:
+  - Core/Fx
+  - Core/Element.Style
+  - /MooTools.More
+
+provides: [Fx.Slide]
+
+...
+*/
+
+Fx.Slide = new Class({
+
+	Extends: Fx,
+
+	options: {
+		mode: 'vertical',
+		wrapper: false,
+		hideOverflow: true,
+		resetHeight: false
+	},
+
+	initialize: function(element, options){
+		element = this.element = this.subject = document.id(element);
+		this.parent(options);
+		options = this.options;
+
+		var wrapper = element.retrieve('wrapper'),
+			styles = element.getStyles('margin', 'position', 'overflow');
+
+		if (options.hideOverflow) styles = Object.append(styles, {overflow: 'hidden'});
+		if (options.wrapper) wrapper = document.id(options.wrapper).setStyles(styles);
+
+		if (!wrapper) wrapper = new Element('div', {
+			styles: styles
+		}).wraps(element);
+
+		element.store('wrapper', wrapper).setStyle('margin', 0);
+		if (element.getStyle('overflow') == 'visible') element.setStyle('overflow', 'hidden');
+
+		this.now = [];
+		this.open = true;
+		this.wrapper = wrapper;
+
+		this.addEvent('complete', function(){
+			this.open = (wrapper['offset' + this.layout.capitalize()] != 0);
+			if (this.open && options.resetHeight) wrapper.setStyle('height', '');
+		}, true);
+	},
+
+	vertical: function(){
+		this.margin = 'margin-top';
+		this.layout = 'height';
+		this.offset = this.element.offsetHeight;
+	},
+
+	horizontal: function(){
+		this.margin = 'margin-left';
+		this.layout = 'width';
+		this.offset = this.element.offsetWidth;
+	},
+
+	set: function(now){
+		this.element.setStyle(this.margin, now[0]);
+		this.wrapper.setStyle(this.layout, now[1]);
+		return this;
+	},
+
+	compute: function(from, to, delta){
+		return [0, 1].map(function(i){
+			return Fx.compute(from[i], to[i], delta);
+		});
+	},
+
+	start: function(how, mode){
+		if (!this.check(how, mode)) return this;
+		this[mode || this.options.mode]();
+
+		var margin = this.element.getStyle(this.margin).toInt(),
+			layout = this.wrapper.getStyle(this.layout).toInt(),
+			caseIn = [[margin, layout], [0, this.offset]],
+			caseOut = [[margin, layout], [-this.offset, 0]],
+			start;
+
+		switch (how){
+			case 'in': start = caseIn; break;
+			case 'out': start = caseOut; break;
+			case 'toggle': start = (layout == 0) ? caseIn : caseOut;
+		}
+		return this.parent(start[0], start[1]);
+	},
+
+	slideIn: function(mode){
+		return this.start('in', mode);
+	},
+
+	slideOut: function(mode){
+		return this.start('out', mode);
+	},
+
+	hide: function(mode){
+		this[mode || this.options.mode]();
+		this.open = false;
+		return this.set([-this.offset, 0]);
+	},
+
+	show: function(mode){
+		this[mode || this.options.mode]();
+		this.open = true;
+		return this.set([0, this.offset]);
+	},
+
+	toggle: function(mode){
+		return this.start('toggle', mode);
+	}
+
+});
+
+Element.Properties.slide = {
+
+	set: function(options){
+		this.get('slide').cancel().setOptions(options);
+		return this;
+	},
+
+	get: function(){
+		var slide = this.retrieve('slide');
+		if (!slide){
+			slide = new Fx.Slide(this, {link: 'cancel'});
+			this.store('slide', slide);
+		}
+		return slide;
+	}
+
 };
 
-})();
+Element.implement({
+
+	slide: function(how, mode){
+		how = how || 'toggle';
+		var slide = this.get('slide'), toggle;
+		switch (how){
+			case 'hide': slide.hide(mode); break;
+			case 'show': slide.show(mode); break;
+			case 'toggle':
+				var flag = this.retrieve('slide:flag', slide.open);
+				slide[flag ? 'slideOut' : 'slideIn'](mode);
+				this.store('slide:flag', !flag);
+				toggle = true;
+			break;
+			default: slide.start(how, mode);
+		}
+		if (!toggle) this.eliminate('slide:flag');
+		return this;
+	}
+
+});
 
 
 /*
@@ -5126,8 +5635,7 @@ var Slider = new Class({
 		onChange: function(intStep){},
 		onComplete: function(strStep){},*/
 		onTick: function(position){
-			if (this.options.snap) position = this.toPosition(this.step);
-			this.knob.setStyle(this.property, position);
+			this.setKnobPosition(position);
 		},
 		initialStep: 0,
 		snap: false,
@@ -5140,32 +5648,34 @@ var Slider = new Class({
 
 	initialize: function(element, knob, options){
 		this.setOptions(options);
+		options = this.options;
 		this.element = document.id(element);
-		this.knob = document.id(knob);
+		knob = this.knob = document.id(knob);
 		this.previousChange = this.previousEnd = this.step = -1;
-		var offset, limit = {}, modifiers = {'x': false, 'y': false};
-		switch (this.options.mode){
+
+		var limit = {},
+			modifiers = {x: false, y: false},
+			offset;
+
+		switch (options.mode){
 			case 'vertical':
 				this.axis = 'y';
 				this.property = 'top';
-				offset = 'offsetHeight';
+				this.offset = 'offsetHeight';
 				break;
 			case 'horizontal':
 				this.axis = 'x';
 				this.property = 'left';
-				offset = 'offsetWidth';
+				this.offset = 'offsetWidth';
 		}
 
-		this.full = this.element.measure(function(){
-			this.half = this.knob[offset] / 2;
-			return this.element[offset] - this.knob[offset] + (this.options.offset * 2);
-		}.bind(this));
+		this.setSliderDimensions();
+		this.setRange(options.range);
 
-		this.setRange(this.options.range);
-
-		this.knob.setStyle('position', 'relative').setStyle(this.property, - this.options.offset);
+		if (knob.getStyle('position') == 'static') knob.setStyle('position', 'relative');
+		knob.setStyle(this.property, -options.offset);
 		modifiers[this.axis] = this.property;
-		limit[this.axis] = [- this.options.offset, this.full - this.options.offset];
+		limit[this.axis] = [-options.offset, this.full - options.offset];
 
 		var dragOptions = {
 			snap: 0,
@@ -5185,14 +5695,11 @@ var Slider = new Class({
 				this.end();
 			}.bind(this)
 		};
-		if (this.options.snap){
-			dragOptions.grid = Math.ceil(this.stepWidth);
-			dragOptions.limit[this.axis][1] = this.full;
-		}
+		if (options.snap) this.setSnap(dragOptions);
 
-		this.drag = new Drag(this.knob, dragOptions);
+		this.drag = new Drag(knob, dragOptions);
 		this.attach();
-		if (this.options.initialStep != null) this.set(this.options.initialStep)
+		if (options.initialStep != null) this.set(options.initialStep);
 	},
 
 	attach: function(){
@@ -5203,9 +5710,38 @@ var Slider = new Class({
 	},
 
 	detach: function(){
-		this.element.removeEvent('mousedown', this.clickedElement);
-		this.element.removeEvent('mousewheel', this.scrolledElement);
+		this.element.removeEvent('mousedown', this.clickedElement)
+			.element.removeEvent('mousewheel', this.scrolledElement);
 		this.drag.detach();
+		return this;
+	},
+
+	autosize: function(){
+		this.setSliderDimensions()
+			.setKnobPosition(this.toPosition(this.step));
+		this.drag.options.limit[this.axis] = [-this.options.offset, this.full - this.options.offset];
+		if (this.options.snap) this.setSnap();
+		return this;
+	},
+
+	setSnap: function(options){
+		if (!options) options = this.drag.options;
+		options.grid = Math.ceil(this.stepWidth);
+		options.limit[this.axis][1] = this.full;
+		return this;
+	},
+
+	setKnobPosition: function(position){
+		if (this.options.snap) position = this.toPosition(this.step);
+		this.knob.setStyle(this.property, position);
+		return this;
+	},
+
+	setSliderDimensions: function(){
+		this.full = this.element.measure(function(){
+			this.half = this.knob[this.offset] / 2;
+			return this.element[this.offset] - this.knob[this.offset] + (this.options.offset * 2);
+		}.bind(this));
 		return this;
 	},
 
@@ -5214,10 +5750,9 @@ var Slider = new Class({
 		if (!((this.range > 0) ^ (step > this.max))) step = this.max;
 
 		this.step = Math.round(step);
-		this.checkStep();
-		this.fireEvent('tick', this.toPosition(this.step));
-		this.end();
-		return this;
+		return this.checkStep()
+			.fireEvent('tick', this.toPosition(this.step))
+			.end();
 	},
 
 	setRange: function(range, pos){
@@ -5227,49 +5762,57 @@ var Slider = new Class({
 		this.steps = this.options.steps || this.full;
 		this.stepSize = Math.abs(this.range) / this.steps;
 		this.stepWidth = this.stepSize * this.full / Math.abs(this.range);
-		this.set(Array.pick([pos, this.step]).floor(this.min).max(this.max));
+		if (range) this.set(Array.pick([pos, this.step]).floor(this.min).max(this.max));
 		return this;
 	},
 
 	clickedElement: function(event){
 		if (this.isDragging || event.target == this.knob) return;
 
-		var dir = this.range < 0 ? -1 : 1;
-		var position = event.page[this.axis] - this.element.getPosition()[this.axis] - this.half;
-		position = position.limit(-this.options.offset, this.full -this.options.offset);
+		var dir = this.range < 0 ? -1 : 1,
+			position = event.page[this.axis] - this.element.getPosition()[this.axis] - this.half;
+
+		position = position.limit(-this.options.offset, this.full - this.options.offset);
 
 		this.step = Math.round(this.min + dir * this.toStep(position));
-		this.checkStep();
-		this.fireEvent('tick', position);
-		this.end();
+
+		this.checkStep()
+			.fireEvent('tick', position)
+			.end();
 	},
 
 	scrolledElement: function(event){
 		var mode = (this.options.mode == 'horizontal') ? (event.wheel < 0) : (event.wheel > 0);
-		this.set(mode ? this.step - this.stepSize : this.step + this.stepSize);
+		this.set(this.step + (mode ? -1 : 1) * this.stepSize);
 		event.stop();
 	},
 
 	draggedKnob: function(){
-		var dir = this.range < 0 ? -1 : 1;
-		var position = this.drag.value.now[this.axis];
+		var dir = this.range < 0 ? -1 : 1,
+			position = this.drag.value.now[this.axis];
+
 		position = position.limit(-this.options.offset, this.full -this.options.offset);
+
 		this.step = Math.round(this.min + dir * this.toStep(position));
 		this.checkStep();
 	},
 
 	checkStep: function(){
-		if (this.previousChange != this.step){
-			this.previousChange = this.step;
-			this.fireEvent('change', this.step);
+		var step = this.step;
+		if (this.previousChange != step){
+			this.previousChange = step;
+			this.fireEvent('change', step);
 		}
+		return this;
 	},
 
 	end: function(){
-		if (this.previousEnd !== this.step){
-			this.previousEnd = this.step;
-			this.fireEvent('complete', this.step + '');
+		var step = this.step;
+		if (this.previousEnd !== step){
+			this.previousEnd = step;
+			this.fireEvent('complete', step + '');
 		}
+		return this;
 	},
 
 	toStep: function(position){
@@ -5310,19 +5853,19 @@ provides: [Assets]
 var Asset = {
 
 	javascript: function(source, properties){
-		properties = Object.append({
-			document: document
-		}, properties);
+		if (!properties) properties = {};
 
-		if (properties.onLoad){
-			properties.onload = properties.onLoad;
-			delete properties.onLoad;
-		}
+		var script = new Element('script', {src: source, type: 'text/javascript'}),
+			doc = properties.document || document,
+			loaded = 0,
+			loadEvent = properties.onload || properties.onLoad;
 
-		var script = new Element('script', {src: source, type: 'text/javascript'});
-		var load = properties.onload || function(){},
-			doc = properties.document;
+		var load = loadEvent ? function(){ // make sure we only call the event once
+			if (++loaded == 1) loadEvent.call(this);
+		} : function(){};
+
 		delete properties.onload;
+		delete properties.onLoad;
 		delete properties.document;
 
 		return script.addEvents({
@@ -5334,39 +5877,40 @@ var Asset = {
 	},
 
 	css: function(source, properties){
-		properties = properties || {};
-		var onload = properties.onload || properties.onLoad;
-		if (onload){
-			properties.events = properties.events || {};
-			properties.events.load = onload;
-			delete properties.onload;
-			delete properties.onLoad;
-		}
-		return new Element('link', Object.merge({
+		if (!properties) properties = {};
+
+		var link = new Element('link', {
 			rel: 'stylesheet',
 			media: 'screen',
 			type: 'text/css',
 			href: source
-		}, properties)).inject(document.head);
+		});
+
+		var load = properties.onload || properties.onLoad,
+			doc = properties.document || document;
+
+		delete properties.onload;
+		delete properties.onLoad;
+		delete properties.document;
+
+		if (load) link.addEvent('load', load);
+		return link.set(properties).inject(doc.head);
 	},
 
 	image: function(source, properties){
-		properties = Object.merge({
-			onload: function(){},
-			onabort: function(){},
-			onerror: function(){}
-		}, properties);
-		var image = new Image();
-		var element = document.id(image) || new Element('img');
+		if (!properties) properties = {};
+
+		var image = new Image(),
+			element = document.id(image) || new Element('img');
+
 		['load', 'abort', 'error'].each(function(name){
-			var type = 'on' + name;
-			var cap = name.capitalize();
-			if (properties['on' + cap]){
-				properties[type] = properties['on' + cap];
-				delete properties['on' + cap];
-			}
-			var event = properties[type];
+			var type = 'on' + name,
+				cap = 'on' + name.capitalize(),
+				event = properties[type] || properties[cap] || function(){};
+
+			delete properties[cap];
 			delete properties[type];
+
 			image[type] = function(){
 				if (!image) return;
 				if (!element.parentNode){
@@ -5378,20 +5922,25 @@ var Asset = {
 				element.fireEvent(name, element, 1);
 			};
 		});
+
 		image.src = element.src = source;
 		if (image && image.complete) image.onload.delay(1);
 		return element.set(properties);
 	},
 
 	images: function(sources, options){
+		sources = Array.from(sources);
+
+		var fn = function(){},
+			counter = 0;
+
 		options = Object.merge({
-			onComplete: function(){},
-			onProgress: function(){},
-			onError: function(){},
+			onComplete: fn,
+			onProgress: fn,
+			onError: fn,
 			properties: {}
 		}, options);
-		sources = Array.from(sources);
-		var counter = 0;
+
 		return new Elements(sources.map(function(source, index){
 			return Asset.image(source, Object.append(options.properties, {
 				onload: function(){
@@ -5431,6 +5980,7 @@ requires:
   - Core/Number
   - Core/Hash
   - Core/Function
+  - MooTools.More
 
 provides: [Color]
 
@@ -5495,15 +6045,15 @@ Color.implement({
 
 });
 
-var $RGB = function(r, g, b){
+this.$RGB = function(r, g, b){
 	return new Color([r, g, b], 'rgb');
 };
 
-var $HSB = function(h, s, b){
+this.$HSB = function(h, s, b){
 	return new Color([h, s, b], 'hsb');
 };
 
-var $HEX = function(hex){
+this.$HEX = function(hex){
 	return new Color(hex, 'hex');
 };
 
@@ -5570,7 +6120,7 @@ String.implement({
 
 });
 
-})();
+}).call(this);
 
 
 
@@ -5616,8 +6166,9 @@ var HtmlTable = new Class({
 	property: 'HtmlTable',
 
 	initialize: function(){
-		var params = Array.link(arguments, {options: Type.isObject, table: Type.isElement});
+		var params = Array.link(arguments, {options: Type.isObject, table: Type.isElement, id: Type.isString});
 		this.setOptions(params.options);
+		if (!params.table && params.id) params.table = document.id(params.id);
 		this.element = params.table || new Element('table', this.options.properties);
 		if (this.occlude()) return this.occluded;
 		this.build();
@@ -5631,18 +6182,15 @@ var HtmlTable = new Class({
 
 		if (this.options.headers.length) this.setHeaders(this.options.headers);
 		else this.thead = document.id(this.element.tHead);
-		if (this.thead) this.head = document.id(this.thead.rows[0]);
 
+		if (this.thead) this.head = this.getHead();
 		if (this.options.footers.length) this.setFooters(this.options.footers);
+
 		this.tfoot = document.id(this.element.tFoot);
 		if (this.tfoot) this.foot = document.id(this.tfoot.rows[0]);
 
 		this.options.rows.each(function(row){
 			this.push(row);
-		}, this);
-
-		['adopt', 'inject', 'wraps', 'grab', 'replaces', 'dispose'].each(function(method){
-				this[method] = this.element[method].bind(this.element);
 		}, this);
 	},
 
@@ -5656,12 +6204,21 @@ var HtmlTable = new Class({
 	},
 
 	set: function(what, items){
-		var target = (what == 'headers') ? 'tHead' : 'tFoot';
-		this[target.toLowerCase()] = (document.id(this.element[target]) || new Element(target.toLowerCase()).inject(this.element, 'top')).empty();
-		var data = this.push(items, {}, this[target.toLowerCase()], what == 'headers' ? 'th' : 'td');
-		if (what == 'headers') this.head = document.id(this.thead.rows[0]);
-		else this.foot = document.id(this.thead.rows[0]);
+		var target = (what == 'headers') ? 'tHead' : 'tFoot',
+			lower = target.toLowerCase();
+
+		this[lower] = (document.id(this.element[target]) || new Element(lower).inject(this.element, 'top')).empty();
+		var data = this.push(items, {}, this[lower], what == 'headers' ? 'th' : 'td');
+
+		if (what == 'headers') this.head = this.getHead();
+		else this.foot = this.getHead();
+
 		return data;
+	},
+
+	getHead: function(){
+		var rows = this.thead.rows;
+		return rows.length > 1 ? $$(rows) : rows.length ? document.id(rows[0]) : false;
 	},
 
 	setHeaders: function(headers){
@@ -5674,31 +6231,43 @@ var HtmlTable = new Class({
 		return this;
 	},
 
-	push: function(row, rowProperties, target, tag){
-		if (typeOf(row) == "element" && row.get('tag') == 'tr'){
-			row.inject(target || this.body);
+	push: function(row, rowProperties, target, tag, where){
+		if (typeOf(row) == 'element' && row.get('tag') == 'tr'){
+			row.inject(target || this.body, where);
 			return {
 				tr: row,
 				tds: row.getChildren('td')
 			};
 		}
+
 		var tds = row.map(function(data){
 			var td = new Element(tag || 'td', data ? data.properties : {}),
-				type = (data ? data.content : '') || data,
-				element = document.id(type);
-			if (typeOf(type) != 'string' && element) td.adopt(element);
-			else td.set('html', type);
+				content = (data ? data.content : '') || data,
+				type = typeOf(content);
+
+			if (['element', 'array', 'collection', 'elements'].contains(type)) td.adopt(content);
+			else td.set('html', content);
 
 			return td;
 		});
 
 		return {
-			tr: new Element('tr', rowProperties).inject(target || this.body).adopt(tds),
+			tr: new Element('tr', rowProperties).inject(target || this.body, where).adopt(tds),
 			tds: tds
 		};
 	}
 
 });
+
+
+['adopt', 'inject', 'wraps', 'grab', 'replaces', 'dispose'].each(function(method){
+	HtmlTable.implement(method, function(){
+		this.element[method].apply(this.element, arguments);
+		return this;
+	});
+});
+
+
 
 
 /*
@@ -5742,6 +6311,11 @@ HtmlTable = Class.refactor(HtmlTable, {
 		Array.each(this.body.rows, this.zebra, this);
 	},
 
+	setRowStyle: function(row, i){
+		if (this.previous) this.previous(row, i);
+		this.zebra(row, i);
+	},
+
 	zebra: function(row, i){
 		return row[((i % 2) ? 'remove' : 'add')+'Class'](this.options.classZebra);
 	},
@@ -5769,6 +6343,7 @@ license: MIT-style license
 authors:
   - Harald Kirschner
   - Aaron Newton
+  - Jacob Thornton
 
 requires:
   - Core/Hash
@@ -5799,7 +6374,8 @@ HtmlTable = Class.refactor(HtmlTable, {
 		classGroup: 'table-tr-group',
 		classCellSort: 'table-td-sort',
 		classSortSpan: 'table-th-sort-span',
-		sortable: false
+		sortable: false,
+		thSelector: 'th'
 	},
 
 	initialize: function (){
@@ -5817,160 +6393,171 @@ HtmlTable = Class.refactor(HtmlTable, {
 	},
 
 	attachSorts: function(attach){
-		this.element.removeEvents('click:relay(th)');
-		this.element[attach !== false ? 'addEvent' : 'removeEvent']('click:relay(th)', this.bound.headClick);
+		this.detachSorts();
+		if (attach !== false) this.element.addEvent('click:relay(' + this.options.thSelector + ')', this.bound.headClick);
+	},
+
+	detachSorts: function(){
+		this.element.removeEvents('click:relay(' + this.options.thSelector + ')');
 	},
 
 	setHeaders: function(){
 		this.previous.apply(this, arguments);
-		if (this.sortEnabled) this.detectParsers();
+		if (this.sortEnabled) this.setParsers();
 	},
 
-	detectParsers: function(force){
-		if (!this.head) return;
-		var parsers = this.options.parsers,
-			rows = this.body.rows;
+	setParsers: function(){
+		this.parsers = this.detectParsers();
+	},
 
-		// auto-detect
-		this.parsers = $$(this.head.cells).map(function(cell, index){
-			if (!force && (cell.hasClass(this.options.classNoSort) || cell.retrieve('htmltable-parser'))) return cell.retrieve('htmltable-parser');
-			var thDiv = new Element('div');
-			Array.each(cell.childNodes, function(node){
-				thDiv.adopt(node);
-			});
-			thDiv.inject(cell);
-			var sortSpan = new Element('span', {'html': '&#160;', 'class': this.options.classSortSpan}).inject(thDiv, 'top');
+	detectParsers: function(){
+		return this.head && this.head.getElements(this.options.thSelector).flatten().map(this.detectParser, this);
+	},
 
-			this.sortSpans.push(sortSpan);
-
-			var parser = parsers[index],
-					cancel;
-			switch (typeOf(parser)){
-				case 'function': parser = {convert: parser}; cancel = true; break;
-				case 'string': parser = parser; cancel = true; break;
-			}
-			if (!cancel){
-				Object.some(HtmlTable.Parsers, function(current){
-					var match = current.match;
-					if (!match) return false;
-					for (var i = 0, j = rows.length; i < j; i++){
-						var cell = document.id(rows[i].cells[index]);
-						var text = cell ? cell.get('html').clean() : '';
-						if (text && match.test(text)){
-							parser = current;
-							return true;
-						}
+	detectParser: function(cell, index){
+		if (cell.hasClass(this.options.classNoSort) || cell.retrieve('htmltable-parser')) return cell.retrieve('htmltable-parser');
+		var thDiv = new Element('div');
+		thDiv.adopt(cell.childNodes).inject(cell);
+		var sortSpan = new Element('span', {'html': '&#160;', 'class': this.options.classSortSpan}).inject(thDiv, 'top');
+		this.sortSpans.push(sortSpan);
+		var parser = this.options.parsers[index],
+			rows = this.body.rows,
+			cancel;
+		switch (typeOf(parser)){
+			case 'function': parser = {convert: parser}; cancel = true; break;
+			case 'string': parser = parser; cancel = true; break;
+		}
+		if (!cancel){
+			HtmlTable.ParserPriority.some(function(parserName){
+				var current = HtmlTable.Parsers[parserName],
+					match = current.match;
+				if (!match) return false;
+				for (var i = 0, j = rows.length; i < j; i++){
+					var cell = document.id(rows[i].cells[index]),
+						text = cell ? cell.get('html').clean() : '';
+					if (text && match.test(text)){
+						parser = current;
+						return true;
 					}
-				});
-			}
-
-			if (!parser) parser = this.options.defaultParser;
-			cell.store('htmltable-parser', parser);
-			return parser;
-		}, this);
+				}
+			});
+		}
+		if (!parser) parser = this.options.defaultParser;
+		cell.store('htmltable-parser', parser);
+		return parser;
 	},
 
 	headClick: function(event, el){
 		if (!this.head || el.hasClass(this.options.classNoSort)) return;
-		var index = Array.indexOf(this.head.cells, el);
-		this.sort(index);
-		return false;
+		return this.sort(Array.indexOf(this.head.getElements(this.options.thSelector).flatten(), el) % this.body.rows[0].cells.length);
+	},
+
+	setSortedState: function(index, reverse){
+		if (reverse != null) this.sorted.reverse = reverse;
+		else if (this.sorted.index == index) this.sorted.reverse = !this.sorted.reverse;
+		else this.sorted.reverse = this.sorted.index == null;
+
+		if (index != null) this.sorted.index = index;
+	},
+
+	setHeadSort: function(sorted){
+		var head = $$(!this.head.length ? this.head.cells[this.sorted.index] : this.head.map(function(row){
+			return row.getElements(this.options.thSelector)[this.sorted.index];
+		}, this).clean());
+		if (!head.length) return;
+		if (sorted){
+			head.addClass(this.options.classHeadSort);
+			if (this.sorted.reverse) head.addClass(this.options.classHeadSortRev);
+			else head.removeClass(this.options.classHeadSortRev);
+		} else {
+			head.removeClass(this.options.classHeadSort).removeClass(this.options.classHeadSortRev);
+		}
+	},
+
+	setRowSort: function(data, pre){
+		var count = data.length,
+			body = this.body,
+			group,
+			rowIndex;
+
+		while (count){
+			var item = data[--count],
+				position = item.position,
+				row = body.rows[position];
+
+			if (row.disabled) continue;
+			if (!pre){
+				group = this.setGroupSort(group, row, item);
+				this.setRowStyle(row, count);
+			}
+			body.appendChild(row);
+
+			for (rowIndex = 0; rowIndex < count; rowIndex++){
+				if (data[rowIndex].position > position) data[rowIndex].position--;
+			}
+		}
+	},
+
+	setRowStyle: function(row, i){
+		this.previous(row, i);
+		row.cells[this.sorted.index].addClass(this.options.classCellSort);
+	},
+
+	setGroupSort: function(group, row, item){
+		if (group == item.value) row.removeClass(this.options.classGroupHead).addClass(this.options.classGroup);
+		else row.removeClass(this.options.classGroup).addClass(this.options.classGroupHead);
+		return item.value;
+	},
+
+	getParser: function(){
+		var parser = this.parsers[this.sorted.index];
+		return typeOf(parser) == 'string' ? HtmlTable.Parsers[parser] : parser;
 	},
 
 	sort: function(index, reverse, pre){
 		if (!this.head) return;
-		var classCellSort = this.options.classCellSort;
-		var classGroup = this.options.classGroup,
-			classGroupHead = this.options.classGroupHead;
 
 		if (!pre){
-			if (index != null){
-				if (this.sorted.index == index){
-					this.sorted.reverse = !(this.sorted.reverse);
-				} else {
-					if (this.sorted.index != null){
-						this.sorted.reverse = false;
-						this.head.cells[this.sorted.index].removeClass(this.options.classHeadSort).removeClass(this.options.classHeadSortRev);
-					} else {
-						this.sorted.reverse = true;
-					}
-					this.sorted.index = index;
-				}
-			} else {
-				index = this.sorted.index;
-			}
-
-			if (reverse != null) this.sorted.reverse = reverse;
-
-			var head = document.id(this.head.cells[index]);
-			if (head){
-				head.addClass(this.options.classHeadSort);
-				if (this.sorted.reverse) head.addClass(this.options.classHeadSortRev);
-				else head.removeClass(this.options.classHeadSortRev);
-			}
-
-			this.body.getElements('td').removeClass(this.options.classCellSort);
+			this.clearSort();
+			this.setSortedState(index, reverse);
+			this.setHeadSort(true);
 		}
 
-		var parser = this.parsers[index];
-		if (typeOf(parser) == 'string') parser = HtmlTable.Parsers[parser];
+		var parser = this.getParser();
 		if (!parser) return;
 
+		var rel;
 		if (!Browser.ie){
-			var rel = this.body.getParent();
+			rel = this.body.getParent();
 			this.body.dispose();
 		}
 
-		var data = Array.map(this.body.rows, function(row, i){
-			var value = parser.convert.call(document.id(row.cells[index]));
-
-			return {
-				position: i,
-				value: value,
-				toString: function(){
-					return value.toString();
-				}
-			};
-		}, this);
-		data.reverse(true);
-
-		data.sort(function(a, b){
+		var data = this.parseData(parser).sort(function(a, b){
 			if (a.value === b.value) return 0;
 			return a.value > b.value ? 1 : -1;
 		});
 
-		if (!this.sorted.reverse) data.reverse(true);
+		if (this.sorted.reverse == (parser == HtmlTable.Parsers['input-checked'])) data.reverse(true);
+		this.setRowSort(data, pre);
 
-		var i = data.length, body = this.body;
-		var j, position, entry, group;
+		if (rel) rel.grab(this.body);
 
-		while (i){
-			var item = data[--i];
-			position = item.position;
-			var row = body.rows[position];
-			if (row.disabled) continue;
+		return this.fireEvent('sort', [this.body, this.sorted.index]);
+	},
 
-			if (!pre){
-				if (group === item.value){
-					row.removeClass(classGroupHead).addClass(classGroup);
-				} else {
-					group = item.value;
-					row.removeClass(classGroup).addClass(classGroupHead);
-				}
-				if (this.options.zebra) this.zebra(row, i);
+	parseData: function(parser){
+		return Array.map(this.body.rows, function(row, i){
+			var value = parser.convert.call(document.id(row.cells[this.sorted.index]));
+			return {
+				position: i,
+				value: value
+			};
+		}, this);
+	},
 
-				row.cells[index].addClass(classCellSort);
-			}
-
-			body.appendChild(row);
-			for (j = 0; j < i; j++){
-				if (data[j].position > position) data[j].position--;
-			}
-		};
-		data = null;
-		if (rel) rel.grab(body);
-
-		return this.fireEvent('sort', [body, index]);
+	clearSort: function(){
+		this.setHeadSort(false);
+		this.body.getElements('td').removeClass(this.options.classCellSort);
 	},
 
 	reSort: function(){
@@ -5981,7 +6568,7 @@ HtmlTable = Class.refactor(HtmlTable, {
 	enableSort: function(){
 		this.element.addClass(this.options.classSortable);
 		this.attachSorts(true);
-		this.detectParsers();
+		this.setParsers();
 		this.sortEnabled = true;
 		return this;
 	},
@@ -5989,13 +6576,17 @@ HtmlTable = Class.refactor(HtmlTable, {
 	disableSort: function(){
 		this.element.removeClass(this.options.classSortable);
 		this.attachSorts(false);
-		this.sortSpans.each(function(span){ span.destroy(); });
+		this.sortSpans.each(function(span){
+			span.destroy();
+		});
 		this.sortSpans.empty();
 		this.sortEnabled = false;
 		return this;
 	}
 
 });
+
+HtmlTable.ParserPriority = ['date', 'input-checked', 'input-value', 'float', 'number'];
 
 HtmlTable.Parsers = {
 
@@ -6050,7 +6641,7 @@ HtmlTable.Parsers = {
 	'string': {
 		match: null,
 		convert: function(){
-			return this.get('text').stripTags();
+			return this.get('text').stripTags().toLowerCase();
 		}
 	},
 	'title': {
@@ -6068,6 +6659,9 @@ HtmlTable.Parsers = new Hash(HtmlTable.Parsers);
 
 HtmlTable.defineParsers = function(parsers){
 	HtmlTable.Parsers = Object.append(HtmlTable.Parsers, parsers);
+	for (var parser in parsers){
+		HtmlTable.ParserPriority.unshift(parser);
+	}
 };
 
 
@@ -6076,7 +6670,7 @@ HtmlTable.defineParsers = function(parsers){
 
 name: Element.Event.Pseudos.Keys
 
-description: Adds functionallity fire events if certain keycombinations are pressed
+description: Adds functionality fire events if certain keycombinations are pressed
 
 license: MIT-style license
 
@@ -6152,7 +6746,7 @@ Object.append(Event.Keys, {
 	'+': 107
 });
 
-})();
+}).call(this);
 
 
 /*
@@ -6202,31 +6796,11 @@ provides: [Keyboard]
 
 		initialize: function(options){
 			if (options && options.manager){
-				this.manager = options.manager;
+				this._manager = options.manager;
 				delete options.manager;
 			}
 			this.setOptions(options);
-			this.setup();
-		},
-		setup: function(){
-			this.addEvents(this.options.events);
-			//if this is the root manager, nothing manages it
-			if (Keyboard.manager && !this.manager) Keyboard.manager.manage(this);
-			if (this.options.active) this.activate();
-		},
-
-		handle: function(event, type){
-			//Keyboard.stop(event) prevents key propagation
-			if (event.preventKeyboardPropagation) return;
-
-			var bubbles = !!this.manager;
-			if (bubbles && this.activeKB){
-				this.activeKB.handle(event, type);
-				if (event.preventKeyboardPropagation) return;
-			}
-			this.fireEvent(type, event);
-
-			if (!bubbles && this.activeKB) this.activeKB.handle(event, type);
+			this._setup();
 		},
 
 		addEvent: function(type, fn, internal){
@@ -6245,61 +6819,61 @@ provides: [Keyboard]
 			if (instance){
 				if (instance.isActive()) return this;
 				//if we're stealing focus, store the last keyboard to have it so the relinquish command works
-				if (this.activeKB && instance != this.activeKB){
-					this.previous = this.activeKB;
+				if (this._activeKB && instance != this._activeKB){
+					this.previous = this._activeKB;
 					this.previous.fireEvent('deactivate');
 				}
 				//if we're enabling a child, assign it so that events are now passed to it
-				this.activeKB = instance.fireEvent('activate');
+				this._activeKB = instance.fireEvent('activate');
 				Keyboard.manager.fireEvent('changed');
-			} else if (this.manager){
+			} else if (this._manager){
 				//else we're enabling ourselves, we must ask our parent to do it for us
-				this.manager.activate(this);
+				this._manager.activate(this);
 			}
 			return this;
 		},
 
 		isActive: function(){
-			return this.manager ? (this.manager.activeKB == this) : (Keyboard.manager == this);
+			return this._manager ? (this._manager._activeKB == this) : (Keyboard.manager == this);
 		},
 
 		deactivate: function(instance){
 			if (instance){
-				if (instance === this.activeKB){
-					this.activeKB = null;
+				if (instance === this._activeKB){
+					this._activeKB = null;
 					instance.fireEvent('deactivate');
 					Keyboard.manager.fireEvent('changed');
 				}
-			} else if (this.manager){
-				this.manager.deactivate(this);
+			} else if (this._manager){
+				this._manager.deactivate(this);
 			}
 			return this;
 		},
 
 		relinquish: function(){
-			if (this.isActive() && this.manager && this.manager.previous) this.manager.activate(this.manager.previous);
+			if (this.isActive() && this._manager && this._manager.previous) this._manager.activate(this._manager.previous);
+			else this.deactivate();
+			return this;
 		},
 
 		//management logic
 		manage: function(instance){
-			if (instance.manager && instance.manager != Keyboard.manager && this != Keyboard.manager) instance.manager.drop(instance);
-			this.instances.push(instance);
-			instance.manager = this;
-			if (!this.activeKB) this.activate(instance);
-		},
-
-		_disable: function(instance){
-			if (this.activeKB == instance) this.activeKB = null;
+			if (instance._manager) instance._manager.drop(instance);
+			this._instances.push(instance);
+			instance._manager = this;
+			if (!this._activeKB) this.activate(instance);
+			return this;
 		},
 
 		drop: function(instance){
-			this._disable(instance);
-			this.instances.erase(instance);
-			Keyboard.manager.manage(instance);
-			if (this.activeKB == instance && this.previous && this.instances.contains(this.previous)) this.activate(this.previous);
+			instance.relinquish();
+			this._instances.erase(instance);
+			if (this._activeKB == instance){
+				if (this.previous && this._instances.contains(this.previous)) this.activate(this.previous);
+				else this._activeKB = this._instances[0];
+			}
+			return this;
 		},
-
-		instances: [],
 
 		trace: function(){
 			Keyboard.trace(this);
@@ -6307,6 +6881,38 @@ provides: [Keyboard]
 
 		each: function(fn){
 			Keyboard.each(this, fn);
+		},
+
+		/*
+			PRIVATE METHODS
+		*/
+
+		_instances: [],
+
+		_disable: function(instance){
+			if (this._activeKB == instance) this._activeKB = null;
+		},
+
+		_setup: function(){
+			this.addEvents(this.options.events);
+			//if this is the root manager, nothing manages it
+			if (Keyboard.manager && !this._manager) Keyboard.manager.manage(this);
+			if (this.options.active) this.activate();
+			else this.relinquish();
+		},
+
+		_handle: function(event, type){
+			//Keyboard.stop(event) prevents key propagation
+			if (event.preventKeyboardPropagation) return;
+
+			var bubbles = !!this._manager;
+			if (bubbles && this._activeKB){
+				this._activeKB._handle(event, type);
+				if (event.preventKeyboardPropagation) return;
+			}
+			this.fireEvent(type, event);
+
+			if (!bubbles && this._activeKB) this._activeKB._handle(event, type);
 		}
 
 	});
@@ -6348,7 +6954,7 @@ provides: [Keyboard]
 		var current = keyboard || Keyboard.manager;
 		while (current){
 			fn.run(current);
-			current = current.activeKB;
+			current = current._activeKB;
 		}
 	};
 
@@ -6376,7 +6982,7 @@ provides: [Keyboard]
 		});
 
 		if (!regex.test(event.key)) keys.push(event.key);
-		Keyboard.manager.handle(event, event.type + ':keys(' + keys.join('+') + ')');
+		Keyboard.manager._handle(event, event.type + ':keys(' + keys.join('+') + ')');
 	};
 
 	document.addEvents({
@@ -6384,7 +6990,7 @@ provides: [Keyboard]
 		'keydown': handler
 	});
 
-})();
+}).call(this);
 
 
 /*
@@ -6422,13 +7028,13 @@ Keyboard.implement({
 		}
 	*/
 	addShortcut: function(name, shortcut){
-		this.shortcuts = this.shortcuts || [];
-		this.shortcutIndex = this.shortcutIndex || {};
+		this._shortcuts = this._shortcuts || [];
+		this._shortcutIndex = this._shortcutIndex || {};
 
 		shortcut.getKeyboard = Function.from(this);
 		shortcut.name = name;
-		this.shortcutIndex[name] = shortcut;
-		this.shortcuts.push(shortcut);
+		this._shortcutIndex[name] = shortcut;
+		this._shortcuts.push(shortcut);
 		if (shortcut.keys) this.addEvent(shortcut.keys, shortcut.handler);
 		return this;
 	},
@@ -6442,8 +7048,8 @@ Keyboard.implement({
 		var shortcut = this.getShortcut(name);
 		if (shortcut && shortcut.keys){
 			this.removeEvent(shortcut.keys, shortcut.handler);
-			delete this.shortcutIndex[name];
-			this.shortcuts.erase(shortcut);
+			delete this._shortcutIndex[name];
+			this._shortcuts.erase(shortcut);
 		}
 		return this;
 	},
@@ -6454,11 +7060,11 @@ Keyboard.implement({
 	},
 
 	getShortcuts: function(){
-		return this.shortcuts || [];
+		return this._shortcuts || [];
 	},
 
 	getShortcut: function(name){
-		return (this.shortcutIndex || {})[name];
+		return (this._shortcutIndex || {})[name];
 	}
 
 });
@@ -6554,16 +7160,23 @@ HtmlTable = Class.refactor(HtmlTable, {
 		if (this.options.selectable) this.enableSelect();
 	},
 
+	empty: function(){
+		this.selectNone();
+		return this.previous();
+	},
+
 	enableSelect: function(){
 		this._selectEnabled = true;
 		this._attachSelects();
 		this.element.addClass(this.options.classSelectable);
+		return this;
 	},
 
 	disableSelect: function(){
 		this._selectEnabled = false;
 		this._attachSelects(false);
 		this.element.removeClass(this.options.classSelectable);
+		return this;
 	},
 
 	push: function(){
@@ -6633,13 +7246,17 @@ HtmlTable = Class.refactor(HtmlTable, {
 			endRow = tmp;
 		}
 
-		for(var i = startRow; i <= endRow; i++) this[method](rows[i], true);
+		for (var i = startRow; i <= endRow; i++) this[method](rows[i], true);
 
 		return this;
 	},
 
 	deselectRange: function(startRow, endRow){
 		this.selectRange(startRow, endRow, true);
+	},
+
+	getSelected: function(){
+		return this._selectedRows;
 	},
 
 /*
@@ -6658,16 +7275,16 @@ HtmlTable = Class.refactor(HtmlTable, {
 	_updateSelects: function(){
 		Array.each(this.body.rows, function(row){
 			var binders = row.retrieve('binders');
-			if ((binders && this._selectEnabled) || (!binders && !this._selectEnabled)) return;
+			if (!binders && !this._selectEnabled) return;
 			if (!binders){
 				binders = {
 					mouseenter: this._enterRow.pass([row], this),
 					mouseleave: this._leaveRow.pass([row], this)
 				};
-				row.store('binders', binders).addEvents(binders);
-			} else {
-				row.removeEvents(binders);
+				row.store('binders', binders);
 			}
+			if (this._selectEnabled) row.addEvents(binders);
+			else row.removeEvents(binders);
 		}, this);
 	},
 
@@ -6796,4 +7413,231 @@ HtmlTable = Class.refactor(HtmlTable, {
 	}
 
 });
+
+
+/*
+---
+
+script: Tips.js
+
+name: Tips
+
+description: Class for creating nice tips that follow the mouse cursor when hovering an element.
+
+license: MIT-style license
+
+authors:
+  - Valerio Proietti
+  - Christoph Pojer
+  - Luis Merino
+
+requires:
+  - Core/Options
+  - Core/Events
+  - Core/Element.Event
+  - Core/Element.Style
+  - Core/Element.Dimensions
+  - /MooTools.More
+
+provides: [Tips]
+
+...
+*/
+
+(function(){
+
+var read = function(option, element){
+	return (option) ? (typeOf(option) == 'function' ? option(element) : element.get(option)) : '';
+};
+
+this.Tips = new Class({
+
+	Implements: [Events, Options],
+
+	options: {/*
+		onAttach: function(element){},
+		onDetach: function(element){},
+		onBound: function(coords){},*/
+		onShow: function(){
+			this.tip.setStyle('display', 'block');
+		},
+		onHide: function(){
+			this.tip.setStyle('display', 'none');
+		},
+		title: 'title',
+		text: function(element){
+			return element.get('rel') || element.get('href');
+		},
+		showDelay: 100,
+		hideDelay: 100,
+		className: 'tip-wrap',
+		offset: {x: 16, y: 16},
+		windowPadding: {x:0, y:0},
+		fixed: false
+	},
+
+	initialize: function(){
+		var params = Array.link(arguments, {
+			options: Type.isObject,
+			elements: function(obj){
+				return obj != null;
+			}
+		});
+		this.setOptions(params.options);
+		if (params.elements) this.attach(params.elements);
+		this.container = new Element('div', {'class': 'tip'});
+	},
+
+	toElement: function(){
+		if (this.tip) return this.tip;
+
+		this.tip = new Element('div', {
+			'class': this.options.className,
+			styles: {
+				position: 'absolute',
+				top: 0,
+				left: 0
+			}
+		}).adopt(
+			new Element('div', {'class': 'tip-top'}),
+			this.container,
+			new Element('div', {'class': 'tip-bottom'})
+		);
+
+		return this.tip;
+	},
+
+	attach: function(elements){
+		$$(elements).each(function(element){
+			var title = read(this.options.title, element),
+				text = read(this.options.text, element);
+
+			element.set('title', '').store('tip:native', title).retrieve('tip:title', title);
+			element.retrieve('tip:text', text);
+			this.fireEvent('attach', [element]);
+
+			var events = ['enter', 'leave'];
+			if (!this.options.fixed) events.push('move');
+
+			events.each(function(value){
+				var event = element.retrieve('tip:' + value);
+				if (!event) event = function(event){
+					this['element' + value.capitalize()].apply(this, [event, element]);
+				}.bind(this);
+
+				element.store('tip:' + value, event).addEvent('mouse' + value, event);
+			}, this);
+		}, this);
+
+		return this;
+	},
+
+	detach: function(elements){
+		$$(elements).each(function(element){
+			['enter', 'leave', 'move'].each(function(value){
+				element.removeEvent('mouse' + value, element.retrieve('tip:' + value)).eliminate('tip:' + value);
+			});
+
+			this.fireEvent('detach', [element]);
+
+			if (this.options.title == 'title'){ // This is necessary to check if we can revert the title
+				var original = element.retrieve('tip:native');
+				if (original) element.set('title', original);
+			}
+		}, this);
+
+		return this;
+	},
+
+	elementEnter: function(event, element){
+		clearTimeout(this.timer);
+		this.timer = (function(){
+			this.container.empty();
+
+			['title', 'text'].each(function(value){
+				var content = element.retrieve('tip:' + value);
+				var div = this['_' + value + 'Element'] = new Element('div', {
+						'class': 'tip-' + value
+					}).inject(this.container);
+				if (content) this.fill(div, content);
+			}, this);
+			this.show(element);
+			this.position((this.options.fixed) ? {page: element.getPosition()} : event);
+		}).delay(this.options.showDelay, this);
+	},
+
+	elementLeave: function(event, element){
+		clearTimeout(this.timer);
+		this.timer = this.hide.delay(this.options.hideDelay, this, element);
+		this.fireForParent(event, element);
+	},
+
+	setTitle: function(title){
+		if (this._titleElement){
+			this._titleElement.empty();
+			this.fill(this._titleElement, title);
+		}
+		return this;
+	},
+
+	setText: function(text){
+		if (this._textElement){
+			this._textElement.empty();
+			this.fill(this._textElement, text);
+		}
+		return this;
+	},
+
+	fireForParent: function(event, element){
+		element = element.getParent();
+		if (!element || element == document.body) return;
+		if (element.retrieve('tip:enter')) element.fireEvent('mouseenter', event);
+		else this.fireForParent(event, element);
+	},
+
+	elementMove: function(event, element){
+		this.position(event);
+	},
+
+	position: function(event){
+		if (!this.tip) document.id(this);
+
+		var size = window.getSize(), scroll = window.getScroll(),
+			tip = {x: this.tip.offsetWidth, y: this.tip.offsetHeight},
+			props = {x: 'left', y: 'top'},
+			bounds = {y: false, x2: false, y2: false, x: false},
+			obj = {};
+
+		for (var z in props){
+			obj[props[z]] = event.page[z] + this.options.offset[z];
+			if (obj[props[z]] < 0) bounds[z] = true;
+			if ((obj[props[z]] + tip[z] - scroll[z]) > size[z] - this.options.windowPadding[z]){
+				obj[props[z]] = event.page[z] - this.options.offset[z] - tip[z];
+				bounds[z+'2'] = true;
+			}
+		}
+
+		this.fireEvent('bound', bounds);
+		this.tip.setStyles(obj);
+	},
+
+	fill: function(element, contents){
+		if (typeof contents == 'string') element.set('html', contents);
+		else element.adopt(contents);
+	},
+
+	show: function(element){
+		if (!this.tip) document.id(this);
+		if (!this.tip.getParent()) this.tip.inject(document.body);
+		this.fireEvent('show', [this.tip, element]);
+	},
+
+	hide: function(element){
+		if (!this.tip) document.id(this);
+		this.fireEvent('hide', [this.tip, element]);
+	}
+
+});
+
+}).call(this);
 

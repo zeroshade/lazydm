@@ -12,7 +12,7 @@
                         </header>
                         {% endwith %}
                         <p>
-                            {{ article.content|bbcode|striptags|truncate(100) }}
+                            {{ article.content|striptags|truncate(100) }}
                         </p>
                     </article>
                 {% endfor %}

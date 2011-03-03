@@ -8,18 +8,45 @@
     {{ h.javascript_link('/MooEditable/Source/MooEditable/MooEditable.js') }}
 {% endblock %}
 {%- block domready -%}
-        $('news-textarea').mooEditable({ 'actions' : 'bold italic underline strikethrough | insertunorderedlist insertorderedlist | indent outdent | undo redo | createlink unlink'});
+        $('news-textarea').mooEditable({ 'actions' : 'bold italic underline ' +
+                                                     'strikethrough | insertunorderedlist ' +
+                                                     'insertorderedlist | indent outdent | ' +
+                                                     'undo redo | createlink unlink toggleview',
+                                         'extraCSS' : 'html { background: #FFF; '
+                                        });
+        new Form.Validator.Inline($('news-post-form'));
+        new Form.Request($('news-post-form'), 'news-form', {
+        extraData: {
+            'partial': 'true'
+        }
+    });
 {%- endblock %}
 {% block title %}Admin - Post News{% endblock %}
 {% block intro %}{% endblock %}
-                        {% block maincontent -%}
+                    {%- block maincontent %}
                             <header>
                                 <h2>Create New Post</h2>
                             </header>
                             
-                            {{ h.secure_form('#',id='news-post-form') }}
-			    <p>
-                            {{ h.HTML.textarea('moo',id='news-textarea',class='large') }}
-			    </p>
+                            <div id='news-form'>
+                            {{ h.secure_form(url.current(action='add_new',type='article'),id='news-post-form') }}
+                            {{ h.hidden('honey','') }}
+                            {% with errors = c.form_errors|default([]) %}
+                                <p{{ " class='error'" if errors['title'] }}>
+                                    <label for='title'>Title</label>
+                                    {{ c.articleModel.text('title',required='required',class='required') }}
+                                    {% if errors['title'] %}
+                                    <span style='display: block;' class='validation-advice'>{{ errors['title'] }}</span>
+                                    {% endif %}
+                                </p>
+                                <p{{ " class='error'" if errors['content'] }}>
+                                    {{ c.articleModel.textarea('content',id='news-textarea',required='required',class='large required') }}
+                                    {% if errors['content'] %}
+                                    <span style='display: block;' class='validation-advice'>{{ errors['content'] }}</span>
+                                    {% endif %}
+                                </p>
+                                <p><input type="submit" value="Save" /></p>
+                            {% endwith %}
                             {{ h.end_form() }}
-                        {% endblock -%}
+                            </div>
+                    {% endblock -%}

@@ -1,6 +1,8 @@
 """SQLAlchemy Metadata and Session object"""
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
+from datetime import datetime
+from pytz import timezone
 
 __all__ = ['Base', 'Session']
 
@@ -11,3 +13,6 @@ Session = scoped_session(sessionmaker())
 Base = declarative_base()
 
 metadata = Base.metadata
+
+def defdate():
+    return datetime.now(timezone("America/New_York"))
