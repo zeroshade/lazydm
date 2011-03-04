@@ -40,6 +40,7 @@ def make_map(config):
     
     map.connect('/admin/manage/{type}/', controller='admin', action='manage', id=0)
     map.connect('/admin/manage/{type}/{id:\d+}/', controller='admin', action='manage')
+    map.connect('/admin/add_new/article/', controller='admin', action='index')
     map.connect('/admin/add/{type}/', controller='admin', action='add_new')
     
     #map.connect('/admin/{action}/', controller='admin')
