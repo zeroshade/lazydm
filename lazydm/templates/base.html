@@ -17,7 +17,6 @@
         window.addEvent('domready', function() {
             {% block domready -%}
             new Form.Validator.Inline(document.id('login-form'));
-            alert("moo");
             {%- endblock %}
         });
     // -->
