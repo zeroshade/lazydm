@@ -1,0 +1,54 @@
+{% extends '/base.html' %}
+{% block title %}Resources - Character Creator{% endblock %}
+{% block intro %}
+        <header>
+			<h2>Resources For DMs</h2>
+		</header>
+		<img src="/img/dragon01.jpg" alt="Dragon" />
+		<p></p>
+{% endblock %}
+{% block stylesheet %}
+    {{ super() }}
+    {{ h.stylesheet_link('/css/tabs.css') }}
+    {{ h.stylesheet_link('/css/diabox.css') }}
+{% endblock %}
+{% block jsinc %}
+    {{ super() }}
+    {{ h.javascript_link('/js/rotater.js') }}
+    {{ h.javascript_link('/js/tabs.js') }}
+
+    {{ h.javascript_link('/js/diabox.js') }}
+{% endblock %}
+{% block domready %}
+        var tabs = new MGFX.Tabs('.tab','.tab-con', {
+            autoplay: false,
+            hover: true,
+            transitionDuration: 200
+        });
+        window.diabox = new Diabox();
+{% endblock %}
+{% block maincontent %}
+    <article>
+        <header>
+            <h2>Character Creation</h2>
+        </header>
+        
+        <ul id='tabs'>
+            <li><a class='tab' id='one' href='#'>Abilities</a></li>
+            <li><a class='tab' id='two' href='#'>Description</a></li>
+            <li><a class='tab' id='three' href='#'>Feats</a></li>
+        </ul>
+        
+        <div id='tab-contents'>
+            <div class='tab-con'>
+                {% include '/resources/character/abilities.html' %}
+            </div>
+            <div class='tab-con'>
+                <p>Two Daisies</p>
+            </div>
+            <div class='tab-con'>
+                <p>Fuck you</p>
+            </div>
+        </div>
+    </article>
+{% endblock %}

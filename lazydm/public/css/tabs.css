@@ -1,0 +1,74 @@
+/****************************************
+ * 
+ * Styles for tab contents and tabs themselves
+ * 
+ ****************************************/
+#tab-contents {
+    background-color: #ddd;
+    position: relative;
+    height: 160px; 
+    width: 510px;
+    overflow: hidden;
+    -webkit-border-radius: 11px;
+	-moz-border-radius:    11px;
+    border-radius: 11px;
+    
+    -webkit-box-shadow: 0 0 5px #777;
+	-moz-box-shadow: 0 0 5px #777;
+	box-shadow: 0 0 5px #777;
+}
+
+.tab-con {
+    padding-left: 5px;
+    padding-top: 5px;
+    height: 160px;
+    position: absolute;
+}
+
+.tab-con img { border: none; }
+
+#tabs {
+    margin-right: 11px;
+    float: left;
+}
+
+#tabs li { 
+    padding-bottom: 3px;
+    margin-bottom: 10px;
+    background-color: #edd;
+    float: none;
+    list-style: none;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+}
+
+#tabs li a {
+    height: 20px;
+    color: #333;
+    padding-left: 6px;
+    
+    width: 75px;
+    display: block;
+    text-decoration: none;
+}
+
+#tabs li a.active {
+    background-color: #ddd;
+    color: #000;
+    -webkit-box-shadow: 0 0 5px #777;
+	-moz-box-shadow: 0 0 5px #777;
+    box-shadow: 0 0 5px #777;
+}
+
+/****************************************
+ *
+ * Styles for Character creation
+ *
+ ****************************************/
+ 
+ .tab-con li {
+    display: block;
+    width: 80px;
+    text-align: right;
+ }

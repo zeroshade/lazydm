@@ -20,7 +20,8 @@ setup(
         "pytz",
         "pygments",
         "repoze.what-pylons",
-        "repoze.what-quickstart"
+        "repoze.what-quickstart",
+        "randomdotorg"
     ],
     setup_requires=["PasteScript>=1.6.3"],
     packages=find_packages(exclude=['ez_setup']),

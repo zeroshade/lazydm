@@ -117,7 +117,7 @@ nav ul li.subscribe a {
 
 #intro h2, #intro p {
 	position: relative;
-	z-index: 9999;
+	z-index: 100;
 	width: 400px;
 }
 
@@ -227,6 +227,7 @@ aside {
 	padding: 21px;
 	background: #E3E3E3;
 	border: 1px solid #D7D7D7;
+    border-radius: 11px;
 	-moz-border-radius: 11px;
 	-webkit-border-radius: 11px;
 }
@@ -316,7 +317,8 @@ aside section {
 
 	background: -webkit-gradient(linear, left top, left bottom, from(rgba(0,0,0,.05)), to(rgba(240,240,240,0.05)));
 	background: -moz-linear-gradient(top, rgba(0,0,0,.05), rgba(240,240,240,0.05));
-	-webkit-border-radius: 11px;
+	border-radius: 11px;
+    -webkit-border-radius: 11px;
 	-moz-border-radius:    11px;
 }
 

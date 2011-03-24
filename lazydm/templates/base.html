@@ -3,7 +3,9 @@
 <head>
 	<meta charset="UTF-8">
 	<title>{% block title %}{% endblock %} | The Lazy DM Dev</title>
-	{% block stylesheet %}{{ h.stylesheet_link('/css/style.css') }}{% endblock %}
+	{% block stylesheet -%}
+    {{ h.stylesheet_link('/css/style.css') }}
+    {%- endblock %}
 	<!--[if lt IE 9]>
 	{{ h.javascript_link('http://html5shim.googlecode.com/svn/trunk/html5.js') }}
 	<![endif]-->

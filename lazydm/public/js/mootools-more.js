@@ -1,6 +1,6 @@
 // MooTools: the javascript framework.
-// Load this file's selection again by visiting: http://mootools.net/more/6877f274e41648725f8249093840c33e 
-// Or build this file again with packager using: packager build More/More More/Array.Extras More/Date More/URI More/Element.Forms More/Form.Request More/Form.Request.Append More/Form.Validator.Inline More/Form.Validator.Extras More/OverText More/Fx.Elements More/Fx.Scroll More/Fx.Slide More/Slider More/Assets More/Color More/HtmlTable.Zebra More/HtmlTable.Sort More/HtmlTable.Select More/Tips
+// Load this file's selection again by visiting: http://mootools.net/more/36cbed531e7ea212cfa432c3c3955372 
+// Or build this file again with packager using: packager build More/More More/Events.Pseudos More/Class.Refactor More/Class.Binds More/Class.Occlude More/Chain.Wait More/Array.Extras More/Date More/Date.Extras More/Number.Format More/Object.Extras More/String.Extras More/String.QueryString More/URI More/URI.Relative More/Hash More/Hash.Extras More/Element.Forms More/Elements.From More/Element.Event.Pseudos More/Element.Event.Pseudos.Keys More/Element.Delegation More/Element.Measure More/Element.Pin More/Element.Position More/Element.Shortcuts More/Form.Request More/Form.Request.Append More/Form.Validator More/Form.Validator.Inline More/Form.Validator.Extras More/OverText More/Fx.Elements More/Fx.Accordion More/Fx.Move More/Fx.Reveal More/Fx.Scroll More/Fx.Slide More/Fx.SmoothScroll More/Fx.Sort More/Drag More/Drag.Move More/Slider More/Sortables More/Assets More/Color More/Hash.Cookie More/IframeShim More/HtmlTable More/HtmlTable.Zebra More/HtmlTable.Sort More/HtmlTable.Select More/Keyboard More/Keyboard.Extras More/Mask More/Scroller More/Tips More/Spinner More/Locale More/Locale.en-US.Date More/Locale.en-US.Form.Validator More/Locale.en-US.Number
 /*
 ---
 
@@ -33,6 +33,374 @@ MooTools.More = {
 	'version': '1.3.1.1',
 	'build': '0292a3af1eea242b817fecf9daa127417d10d4ce'
 };
+
+
+/*
+---
+
+name: Events.Pseudos
+
+description: Adds the functionality to add pseudo events
+
+license: MIT-style license
+
+authors:
+  - Arian Stolwijk
+
+requires: [Core/Class.Extras, Core/Slick.Parser, More/MooTools.More]
+
+provides: [Events.Pseudos]
+
+...
+*/
+
+Events.Pseudos = function(pseudos, addEvent, removeEvent){
+
+	var storeKey = 'monitorEvents:';
+
+	var storageOf = function(object){
+		return {
+			store: object.store ? function(key, value){
+				object.store(storeKey + key, value);
+			} : function(key, value){
+				(object.$monitorEvents || (object.$monitorEvents = {}))[key] = value;
+			},
+			retrieve: object.retrieve ? function(key, dflt){
+				return object.retrieve(storeKey + key, dflt);
+			} : function(key, dflt){
+				if (!object.$monitorEvents) return dflt;
+				return object.$monitorEvents[key] || dflt;
+			}
+		};
+	};
+
+	var splitType = function(type){
+		if (type.indexOf(':') == -1 || !pseudos) return null;
+
+		var parsed = Slick.parse(type).expressions[0][0],
+			parsedPseudos = parsed.pseudos,
+			l = parsedPseudos.length,
+			splits = [];
+
+		while (l--) if (pseudos[parsedPseudos[l].key]){
+			splits.push({
+				event: parsed.tag,
+				value: parsedPseudos[l].value,
+				pseudo: parsedPseudos[l].key,
+				original: type
+			});
+		}
+
+		return splits.length ? splits : null;
+	};
+
+	var mergePseudoOptions = function(split){
+		return Object.merge.apply(this, split.map(function(item){
+			return pseudos[item.pseudo].options || {};
+		}));
+	};
+
+	return {
+
+		addEvent: function(type, fn, internal){
+			var split = splitType(type);
+			if (!split) return addEvent.call(this, type, fn, internal);
+
+			var storage = storageOf(this),
+				events = storage.retrieve(type, []),
+				eventType = split[0].event,
+				options = mergePseudoOptions(split),
+				stack = fn,
+				eventOptions = options[eventType] || {},
+				args = Array.slice(arguments, 2),
+				self = this,
+				monitor;
+
+			if (eventOptions.args) args.append(Array.from(eventOptions.args));
+			if (eventOptions.base) eventType = eventOptions.base;
+			if (eventOptions.onAdd) eventOptions.onAdd(this);
+
+			split.each(function(item){
+				var stackFn = stack;
+				stack = function(){
+					(eventOptions.listener || pseudos[item.pseudo].listener).call(self, item, stackFn, arguments, monitor, options);
+				};
+			});
+			monitor = stack.bind(this);
+
+			events.include({event: fn, monitor: monitor});
+			storage.store(type, events);
+
+			addEvent.apply(this, [type, fn].concat(args));
+			return addEvent.apply(this, [eventType, monitor].concat(args));
+		},
+
+		removeEvent: function(type, fn){
+			var split = splitType(type);
+			if (!split) return removeEvent.call(this, type, fn);
+
+			var storage = storageOf(this),
+				events = storage.retrieve(type);
+			if (!events) return this;
+
+			var eventType = split[0].event,
+				options = mergePseudoOptions(split),
+				eventOptions = options[eventType] || {},
+				args = Array.slice(arguments, 2);
+
+			if (eventOptions.args) args.append(Array.from(eventOptions.args));
+			if (eventOptions.base) eventType = eventOptions.base;
+			if (eventOptions.onRemove) eventOptions.onRemove(this);
+
+			removeEvent.apply(this, [type, fn].concat(args));
+			events.each(function(monitor, i){
+				if (!fn || monitor.event == fn) removeEvent.apply(this, [eventType, monitor.monitor].concat(args));
+				delete events[i];
+			}, this);
+
+			storage.store(type, events);
+			return this;
+		}
+
+	};
+
+};
+
+(function(){
+
+var pseudos = {
+
+	once: {
+		listener: function(split, fn, args, monitor){
+			fn.apply(this, args);
+			this.removeEvent(split.event, monitor)
+				.removeEvent(split.original, fn);
+		}
+	},
+
+	throttle: {
+		listener: function(split, fn, args){
+			if (!fn._throttled){
+				fn.apply(this, args);
+				fn._throttled = setTimeout(function(){
+					fn._throttled = false;
+				}, split.value || 250);
+			}
+		}
+	},
+
+	pause: {
+		listener: function(split, fn, args){
+			clearTimeout(fn._pause);
+			fn._pause = fn.delay(split.value || 250, this, args);
+		}
+	}
+
+};
+
+Events.definePseudo = function(key, listener){
+	pseudos[key] = Type.isFunction(listener) ? {listener: listener} : listener;
+	return this;
+};
+
+Events.lookupPseudo = function(key){
+	return pseudos[key];
+};
+
+var proto = Events.prototype;
+Events.implement(Events.Pseudos(pseudos, proto.addEvent, proto.removeEvent));
+
+['Request', 'Fx'].each(function(klass){
+	if (this[klass]) this[klass].implement(Events.prototype);
+});
+
+}).call(this);
+
+
+/*
+---
+
+script: Class.Refactor.js
+
+name: Class.Refactor
+
+description: Extends a class onto itself with new property, preserving any items attached to the class's namespace.
+
+license: MIT-style license
+
+authors:
+  - Aaron Newton
+
+requires:
+  - Core/Class
+  - /MooTools.More
+
+# Some modules declare themselves dependent on Class.Refactor
+provides: [Class.refactor, Class.Refactor]
+
+...
+*/
+
+Class.refactor = function(original, refactors){
+
+	Object.each(refactors, function(item, name){
+		var origin = original.prototype[name];
+		if (origin && origin.$origin) origin = origin.$origin;
+		original.implement(name, (typeof item == 'function') ? function(){
+			var old = this.previous;
+			this.previous = origin || function(){};
+			var value = item.apply(this, arguments);
+			this.previous = old;
+			return value;
+		} : item);
+	});
+
+	return original;
+
+};
+
+
+/*
+---
+
+script: Class.Binds.js
+
+name: Class.Binds
+
+description: Automagically binds specified methods in a class to the instance of the class.
+
+license: MIT-style license
+
+authors:
+  - Aaron Newton
+
+requires:
+  - Core/Class
+  - /MooTools.More
+
+provides: [Class.Binds]
+
+...
+*/
+
+Class.Mutators.Binds = function(binds){
+	if (!this.prototype.initialize) this.implement('initialize', function(){});
+	return binds;
+};
+
+Class.Mutators.initialize = function(initialize){
+	return function(){
+		Array.from(this.Binds).each(function(name){
+			var original = this[name];
+			if (original) this[name] = original.bind(this);
+		}, this);
+		return initialize.apply(this, arguments);
+	};
+};
+
+
+/*
+---
+
+script: Class.Occlude.js
+
+name: Class.Occlude
+
+description: Prevents a class from being applied to a DOM element twice.
+
+license: MIT-style license.
+
+authors:
+  - Aaron Newton
+
+requires:
+  - Core/Class
+  - Core/Element
+  - /MooTools.More
+
+provides: [Class.Occlude]
+
+...
+*/
+
+Class.Occlude = new Class({
+
+	occlude: function(property, element){
+		element = document.id(element || this.element);
+		var instance = element.retrieve(property || this.property);
+		if (instance && !this.occluded)
+			return (this.occluded = instance);
+
+		this.occluded = false;
+		element.store(property || this.property, this);
+		return this.occluded;
+	}
+
+});
+
+
+/*
+---
+
+script: Chain.Wait.js
+
+name: Chain.Wait
+
+description: value, Adds a method to inject pauses between chained events.
+
+license: MIT-style license.
+
+authors:
+  - Aaron Newton
+
+requires:
+  - Core/Chain
+  - Core/Element
+  - Core/Fx
+  - /MooTools.More
+
+provides: [Chain.Wait]
+
+...
+*/
+
+(function(){
+
+	var wait = {
+		wait: function(duration){
+			return this.chain(function(){
+				this.callChain.delay(duration == null ? 500 : duration, this);
+			}.bind(this));
+		}
+	};
+
+	Chain.implement(wait);
+
+	if (this.Fx) Fx.implement(wait);
+
+	if (this.Element && Element.implement && this.Fx){
+		Element.implement({
+
+			chains: function(effects){
+				Array.from(effects || ['tween', 'morph', 'reveal']).each(function(effect){
+					effect = this.get(effect);
+					if (!effect) return;
+					effect.setOptions({
+						link:'chain'
+					});
+				}, this);
+				return this;
+			},
+
+			pauseFx: function(duration, effect){
+				this.chains(effect).get(effect || 'tween').wait(duration);
+				return this;
+			}
+
+		});
+	}
+
+}).call(this);
 
 
 /*
@@ -1018,6 +1386,444 @@ Locale.addEvent('change', function(language){
 /*
 ---
 
+script: Date.Extras.js
+
+name: Date.Extras
+
+description: Extends the Date native object to include extra methods (on top of those in Date.js).
+
+license: MIT-style license
+
+authors:
+  - Aaron Newton
+  - Scott Kyle
+
+requires:
+  - /Date
+
+provides: [Date.Extras]
+
+...
+*/
+
+Date.implement({
+
+	timeDiffInWords: function(to){
+		return Date.distanceOfTimeInWords(this, to || new Date);
+	},
+
+	timeDiff: function(to, separator){
+		if (to == null) to = new Date;
+		var delta = ((to - this) / 1000).floor();
+
+		var vals = [],
+			durations = [60, 60, 24, 365, 0],
+			names = ['s', 'm', 'h', 'd', 'y'],
+			value, duration;
+
+		for (var item = 0; item < durations.length; item++){
+			if (item && !delta) break;
+			value = delta;
+			if ((duration = durations[item])){
+				value = (delta % duration);
+				delta = (delta / duration).floor();
+			}
+			vals.unshift(value + (names[item] || ''));
+		}
+
+		return vals.join(separator || ':');
+	}
+
+}).extend({
+
+	distanceOfTimeInWords: function(from, to){
+		return Date.getTimePhrase(((to - from) / 1000).toInt());
+	},
+
+	getTimePhrase: function(delta){
+		var suffix = (delta < 0) ? 'Until' : 'Ago';
+		if (delta < 0) delta *= -1;
+
+		var units = {
+			minute: 60,
+			hour: 60,
+			day: 24,
+			week: 7,
+			month: 52 / 12,
+			year: 12,
+			eon: Infinity
+		};
+
+		var msg = 'lessThanMinute';
+
+		for (var unit in units){
+			var interval = units[unit];
+			if (delta < 1.5 * interval){
+				if (delta > 0.75 * interval) msg = unit;
+				break;
+			}
+			delta /= interval;
+			msg = unit + 's';
+		}
+
+		delta = delta.round();
+		return Date.getMsg(msg + suffix, delta).substitute({delta: delta});
+	}
+
+}).defineParsers(
+
+	{
+		// "today", "tomorrow", "yesterday"
+		re: /^(?:tod|tom|yes)/i,
+		handler: function(bits){
+			var d = new Date().clearTime();
+			switch (bits[0]){
+				case 'tom': return d.increment();
+				case 'yes': return d.decrement();
+				default: return d;
+			}
+		}
+	},
+
+	{
+		// "next Wednesday", "last Thursday"
+		re: /^(next|last) ([a-z]+)$/i,
+		handler: function(bits){
+			var d = new Date().clearTime();
+			var day = d.getDay();
+			var newDay = Date.parseDay(bits[2], true);
+			var addDays = newDay - day;
+			if (newDay <= day) addDays += 7;
+			if (bits[1] == 'last') addDays -= 7;
+			return d.set('date', d.getDate() + addDays);
+		}
+	}
+
+).alias('timeAgoInWords', 'timeDiffInWords');
+
+
+/*
+---
+
+name: Locale.en-US.Number
+
+description: Number messages for US English.
+
+license: MIT-style license
+
+authors:
+  - Arian Stolwijk
+
+requires:
+  - /Locale
+
+provides: [Locale.en-US.Number]
+
+...
+*/
+
+Locale.define('en-US', 'Number', {
+
+	decimal: '.',
+	group: ',',
+
+/* 	Commented properties are the defaults for Number.format
+	decimals: 0,
+	precision: 0,
+	scientific: null,
+
+	prefix: null,
+	suffic: null,
+
+	// Negative/Currency/percentage will mixin Number
+	negative: {
+		prefix: '-'
+	},*/
+
+	currency: {
+//		decimals: 2,
+		prefix: '$ '
+	}/*,
+
+	percentage: {
+		decimals: 2,
+		suffix: '%'
+	}*/
+
+});
+
+
+
+
+/*
+---
+
+name: Number.Format
+
+description: Extends the Number Type object to include a number formatting method.
+
+license: MIT-style license
+
+authors:
+  - Arian Stolwijk
+
+requires:
+  - Core/Number
+  - /Locale.en-US.Number
+
+provides: [Number.Extras]
+
+...
+*/
+
+
+Number.implement({
+
+	format: function(options){
+		// Thanks dojo and YUI for some inspiration
+		var value = this;
+		if (!options) options = {};
+		var getOption = function(key){
+			if (options[key] != null) return options[key];
+			return Locale.get('Number.' + key);
+		};
+
+		var negative = value < 0,
+			decimal = getOption('decimal'),
+			precision = getOption('precision'),
+			group = getOption('group'),
+			decimals = getOption('decimals');
+
+		if (negative){
+			var negativeLocale = Locale.get('Number.negative') || {};
+			if (negativeLocale.prefix == null && negativeLocale.suffix == null) negativeLocale.prefix = '-';
+			Object.each(negativeLocale, function(value, key){
+				options[key] = (key == 'prefix' || key == 'suffix') ? (getOption(key) + value) : value;
+			});
+
+			value = -value;
+		}
+
+		var prefix = getOption('prefix'),
+			suffix = getOption('suffix');
+
+		if (decimals !== '' && decimals >= 0 && decimals <= 20) value = value.toFixed(decimals);
+		if (precision >= 1 && precision <= 21) value = (+value).toPrecision(precision);
+
+		value += '';
+		var index;
+		if (getOption('scientific') === false && value.indexOf('e') > -1){
+			var match = value.split('e'),
+				zeros = +match[1];
+			value = match[0].replace('.', '');
+
+			if (zeros < 0){
+				zeros = -zeros - 1;
+				index = match[0].indexOf('.');
+				if (index > -1) zeros -= index - 1;
+				while (zeros--) value = '0' + value;
+				value = '0.' + value;
+			} else {
+				index = match[0].lastIndexOf('.');
+				if (index > -1) zeros -= match[0].length - index - 1;
+				while (zeros--) value += '0';
+			}
+		}
+
+		if (decimal != '.') value = value.replace('.', decimal);
+
+		if (group){
+			index = value.lastIndexOf(decimal);
+			index = (index > -1) ? index : value.length;
+			var newOutput = value.substring(index),
+				i = index;
+
+			while (i--){
+				if ((index - i - 1) % 3 == 0 && i != (index - 1)) newOutput = group + newOutput;
+				newOutput = value.charAt(i) + newOutput;
+			}
+
+			value = newOutput;
+		}
+
+		if (prefix) value = prefix + value;
+		if (suffix) value += suffix;
+
+		return value;
+	},
+
+	formatCurrency: function(){
+		var locale = Locale.get('Number.currency') || {};
+		if (locale.scientific == null) locale.scientific = false;
+		if (locale.decimals == null) locale.decimals = 2;
+
+		return this.format(locale);
+	},
+
+	formatPercentage: function(){
+		var locale = Locale.get('Number.percentage') || {};
+		if (locale.suffix == null) locale.suffix = '%';
+		if (locale.decimals == null) locale.decimals = 2;
+
+		return this.format(locale);
+	}
+
+});
+
+
+/*
+---
+
+script: String.Extras.js
+
+name: String.Extras
+
+description: Extends the String native object to include methods useful in managing various kinds of strings (query strings, urls, html, etc).
+
+license: MIT-style license
+
+authors:
+  - Aaron Newton
+  - Guillermo Rauch
+  - Christopher Pitt
+
+requires:
+  - Core/String
+  - Core/Array
+  - MooTools.More
+
+provides: [String.Extras]
+
+...
+*/
+
+(function(){
+
+var special = {
+	'a': /[àáâãäåăą]/g,
+	'A': /[ÀÁÂÃÄÅĂĄ]/g,
+	'c': /[ćčç]/g,
+	'C': /[ĆČÇ]/g,
+	'd': /[ďđ]/g,
+	'D': /[ĎÐ]/g,
+	'e': /[èéêëěę]/g,
+	'E': /[ÈÉÊËĚĘ]/g,
+	'g': /[ğ]/g,
+	'G': /[Ğ]/g,
+	'i': /[ìíîï]/g,
+	'I': /[ÌÍÎÏ]/g,
+	'l': /[ĺľł]/g,
+	'L': /[ĹĽŁ]/g,
+	'n': /[ñňń]/g,
+	'N': /[ÑŇŃ]/g,
+	'o': /[òóôõöøő]/g,
+	'O': /[ÒÓÔÕÖØ]/g,
+	'r': /[řŕ]/g,
+	'R': /[ŘŔ]/g,
+	's': /[ššş]/g,
+	'S': /[ŠŞŚ]/g,
+	't': /[ťţ]/g,
+	'T': /[ŤŢ]/g,
+	'ue': /[ü]/g,
+	'UE': /[Ü]/g,
+	'u': /[ùúûůµ]/g,
+	'U': /[ÙÚÛŮ]/g,
+	'y': /[ÿý]/g,
+	'Y': /[ŸÝ]/g,
+	'z': /[žźż]/g,
+	'Z': /[ŽŹŻ]/g,
+	'th': /[þ]/g,
+	'TH': /[Þ]/g,
+	'dh': /[ð]/g,
+	'DH': /[Ð]/g,
+	'ss': /[ß]/g,
+	'oe': /[œ]/g,
+	'OE': /[Œ]/g,
+	'ae': /[æ]/g,
+	'AE': /[Æ]/g
+},
+
+tidy = {
+	' ': /[\xa0\u2002\u2003\u2009]/g,
+	'*': /[\xb7]/g,
+	'\'': /[\u2018\u2019]/g,
+	'"': /[\u201c\u201d]/g,
+	'...': /[\u2026]/g,
+	'-': /[\u2013]/g,
+//	'--': /[\u2014]/g,
+	'&raquo;': /[\uFFFD]/g
+};
+
+var walk = function(string, replacements){
+	var result = string, key;
+	for (key in replacements) result = result.replace(replacements[key], key);
+	return result;
+};
+
+var getRegexForTag = function(tag, contents){
+	tag = tag || '';
+	var regstr = contents ? "<" + tag + "(?!\\w)[^>]*>([\\s\\S]*?)<\/" + tag + "(?!\\w)>" : "<\/?" + tag + "([^>]+)?>",
+		reg = new RegExp(regstr, "gi");
+	return reg;
+};
+
+String.implement({
+
+	standardize: function(){
+		return walk(this, special);
+	},
+
+	repeat: function(times){
+		return new Array(times + 1).join(this);
+	},
+
+	pad: function(length, str, direction){
+		if (this.length >= length) return this;
+
+		var pad = (str == null ? ' ' : '' + str)
+			.repeat(length - this.length)
+			.substr(0, length - this.length);
+
+		if (!direction || direction == 'right') return this + pad;
+		if (direction == 'left') return pad + this;
+
+		return pad.substr(0, (pad.length / 2).floor()) + this + pad.substr(0, (pad.length / 2).ceil());
+	},
+
+	getTags: function(tag, contents){
+		return this.match(getRegexForTag(tag, contents)) || [];
+	},
+
+	stripTags: function(tag, contents){
+		return this.replace(getRegexForTag(tag, contents), '');
+	},
+
+	tidy: function(){
+		return walk(this, tidy);
+	},
+
+	truncate: function(max, trail, atChar){
+		var string = this;
+		if (trail == null && arguments.length == 1) trail = '…';
+		if (string.length > max){
+			string = string.substring(0, max);
+			if (atChar){
+				var index = string.lastIndexOf(atChar);
+				if (index != -1) string = string.substr(0, index);
+			}
+			if (trail) string += trail;
+		}
+		return string;
+	}
+
+});
+
+}).call(this);
+
+
+/*
+---
+
 script: String.QueryString.js
 
 name: String.QueryString
@@ -1259,151 +2065,247 @@ String.implement({
 /*
 ---
 
-script: String.Extras.js
+script: URI.Relative.js
 
-name: String.Extras
+name: URI.Relative
 
-description: Extends the String native object to include methods useful in managing various kinds of strings (query strings, urls, html, etc).
+description: Extends the URI class to add methods for computing relative and absolute urls.
 
 license: MIT-style license
 
 authors:
-  - Aaron Newton
-  - Guillermo Rauch
-  - Christopher Pitt
+  - Sebastian Markbåge
+
 
 requires:
-  - Core/String
-  - Core/Array
-  - MooTools.More
+  - /Class.refactor
+  - /URI
 
-provides: [String.Extras]
+provides: [URI.Relative]
+
+...
+*/
+
+URI = Class.refactor(URI, {
+
+	combine: function(bits, base){
+		if (!base || bits.scheme != base.scheme || bits.host != base.host || bits.port != base.port)
+			return this.previous.apply(this, arguments);
+		var end = bits.file + (bits.query ? '?' + bits.query : '') + (bits.fragment ? '#' + bits.fragment : '');
+
+		if (!base.directory) return (bits.directory || (bits.file ? '' : './')) + end;
+
+		var baseDir = base.directory.split('/'),
+			relDir = bits.directory.split('/'),
+			path = '',
+			offset;
+
+		var i = 0;
+		for (offset = 0; offset < baseDir.length && offset < relDir.length && baseDir[offset] == relDir[offset]; offset++);
+		for (i = 0; i < baseDir.length - offset - 1; i++) path += '../';
+		for (i = offset; i < relDir.length - 1; i++) path += relDir[i] + '/';
+
+		return (path || (bits.file ? '' : './')) + end;
+	},
+
+	toAbsolute: function(base){
+		base = new URI(base);
+		if (base) base.set('directory', '').set('file', '');
+		return this.toRelative(base);
+	},
+
+	toRelative: function(base){
+		return this.get('value', new URI(base));
+	}
+
+});
+
+
+/*
+---
+
+name: Hash
+
+description: Contains Hash Prototypes. Provides a means for overcoming the JavaScript practical impossibility of extending native Objects.
+
+license: MIT-style license.
+
+requires:
+  - Core/Object
+  - /MooTools.More
+
+provides: [Hash]
 
 ...
 */
 
 (function(){
 
-var special = {
-	'a': /[àáâãäåăą]/g,
-	'A': /[ÀÁÂÃÄÅĂĄ]/g,
-	'c': /[ćčç]/g,
-	'C': /[ĆČÇ]/g,
-	'd': /[ďđ]/g,
-	'D': /[ĎÐ]/g,
-	'e': /[èéêëěę]/g,
-	'E': /[ÈÉÊËĚĘ]/g,
-	'g': /[ğ]/g,
-	'G': /[Ğ]/g,
-	'i': /[ìíîï]/g,
-	'I': /[ÌÍÎÏ]/g,
-	'l': /[ĺľł]/g,
-	'L': /[ĹĽŁ]/g,
-	'n': /[ñňń]/g,
-	'N': /[ÑŇŃ]/g,
-	'o': /[òóôõöøő]/g,
-	'O': /[ÒÓÔÕÖØ]/g,
-	'r': /[řŕ]/g,
-	'R': /[ŘŔ]/g,
-	's': /[ššş]/g,
-	'S': /[ŠŞŚ]/g,
-	't': /[ťţ]/g,
-	'T': /[ŤŢ]/g,
-	'ue': /[ü]/g,
-	'UE': /[Ü]/g,
-	'u': /[ùúûůµ]/g,
-	'U': /[ÙÚÛŮ]/g,
-	'y': /[ÿý]/g,
-	'Y': /[ŸÝ]/g,
-	'z': /[žźż]/g,
-	'Z': /[ŽŹŻ]/g,
-	'th': /[þ]/g,
-	'TH': /[Þ]/g,
-	'dh': /[ð]/g,
-	'DH': /[Ð]/g,
-	'ss': /[ß]/g,
-	'oe': /[œ]/g,
-	'OE': /[Œ]/g,
-	'ae': /[æ]/g,
-	'AE': /[Æ]/g
-},
+if (this.Hash) return;
 
-tidy = {
-	' ': /[\xa0\u2002\u2003\u2009]/g,
-	'*': /[\xb7]/g,
-	'\'': /[\u2018\u2019]/g,
-	'"': /[\u201c\u201d]/g,
-	'...': /[\u2026]/g,
-	'-': /[\u2013]/g,
-//	'--': /[\u2014]/g,
-	'&raquo;': /[\uFFFD]/g
+var Hash = this.Hash = new Type('Hash', function(object){
+	if (typeOf(object) == 'hash') object = Object.clone(object.getClean());
+	for (var key in object) this[key] = object[key];
+	return this;
+});
+
+this.$H = function(object){
+	return new Hash(object);
 };
 
-var walk = function(string, replacements){
-	var result = string, key;
-	for (key in replacements) result = result.replace(replacements[key], key);
-	return result;
-};
+Hash.implement({
 
-var getRegexForTag = function(tag, contents){
-	tag = tag || '';
-	var regstr = contents ? "<" + tag + "(?!\\w)[^>]*>([\\s\\S]*?)<\/" + tag + "(?!\\w)>" : "<\/?" + tag + "([^>]+)?>",
-		reg = new RegExp(regstr, "gi");
-	return reg;
-};
-
-String.implement({
-
-	standardize: function(){
-		return walk(this, special);
+	forEach: function(fn, bind){
+		Object.forEach(this, fn, bind);
 	},
 
-	repeat: function(times){
-		return new Array(times + 1).join(this);
-	},
-
-	pad: function(length, str, direction){
-		if (this.length >= length) return this;
-
-		var pad = (str == null ? ' ' : '' + str)
-			.repeat(length - this.length)
-			.substr(0, length - this.length);
-
-		if (!direction || direction == 'right') return this + pad;
-		if (direction == 'left') return pad + this;
-
-		return pad.substr(0, (pad.length / 2).floor()) + this + pad.substr(0, (pad.length / 2).ceil());
-	},
-
-	getTags: function(tag, contents){
-		return this.match(getRegexForTag(tag, contents)) || [];
-	},
-
-	stripTags: function(tag, contents){
-		return this.replace(getRegexForTag(tag, contents), '');
-	},
-
-	tidy: function(){
-		return walk(this, tidy);
-	},
-
-	truncate: function(max, trail, atChar){
-		var string = this;
-		if (trail == null && arguments.length == 1) trail = '…';
-		if (string.length > max){
-			string = string.substring(0, max);
-			if (atChar){
-				var index = string.lastIndexOf(atChar);
-				if (index != -1) string = string.substr(0, index);
-			}
-			if (trail) string += trail;
+	getClean: function(){
+		var clean = {};
+		for (var key in this){
+			if (this.hasOwnProperty(key)) clean[key] = this[key];
 		}
-		return string;
+		return clean;
+	},
+
+	getLength: function(){
+		var length = 0;
+		for (var key in this){
+			if (this.hasOwnProperty(key)) length++;
+		}
+		return length;
 	}
 
 });
 
+Hash.alias('each', 'forEach');
+
+Hash.implement({
+
+	has: Object.prototype.hasOwnProperty,
+
+	keyOf: function(value){
+		return Object.keyOf(this, value);
+	},
+
+	hasValue: function(value){
+		return Object.contains(this, value);
+	},
+
+	extend: function(properties){
+		Hash.each(properties || {}, function(value, key){
+			Hash.set(this, key, value);
+		}, this);
+		return this;
+	},
+
+	combine: function(properties){
+		Hash.each(properties || {}, function(value, key){
+			Hash.include(this, key, value);
+		}, this);
+		return this;
+	},
+
+	erase: function(key){
+		if (this.hasOwnProperty(key)) delete this[key];
+		return this;
+	},
+
+	get: function(key){
+		return (this.hasOwnProperty(key)) ? this[key] : null;
+	},
+
+	set: function(key, value){
+		if (!this[key] || this.hasOwnProperty(key)) this[key] = value;
+		return this;
+	},
+
+	empty: function(){
+		Hash.each(this, function(value, key){
+			delete this[key];
+		}, this);
+		return this;
+	},
+
+	include: function(key, value){
+		if (this[key] == undefined) this[key] = value;
+		return this;
+	},
+
+	map: function(fn, bind){
+		return new Hash(Object.map(this, fn, bind));
+	},
+
+	filter: function(fn, bind){
+		return new Hash(Object.filter(this, fn, bind));
+	},
+
+	every: function(fn, bind){
+		return Object.every(this, fn, bind);
+	},
+
+	some: function(fn, bind){
+		return Object.some(this, fn, bind);
+	},
+
+	getKeys: function(){
+		return Object.keys(this);
+	},
+
+	getValues: function(){
+		return Object.values(this);
+	},
+
+	toQueryString: function(base){
+		return Object.toQueryString(this, base);
+	}
+
+});
+
+Hash.alias({indexOf: 'keyOf', contains: 'hasValue'});
+
+
 }).call(this);
+
+
+
+/*
+---
+
+script: Hash.Extras.js
+
+name: Hash.Extras
+
+description: Extends the Hash Type to include getFromPath which allows a path notation to child elements.
+
+license: MIT-style license
+
+authors:
+  - Aaron Newton
+
+requires:
+  - /Hash
+  - /Object.Extras
+
+provides: [Hash.Extras]
+
+...
+*/
+
+Hash.implement({
+
+	getFromPath: function(notation){
+		return Object.getFromPath(this, notation);
+	},
+
+	cleanValues: function(method){
+		return new Hash(Object.cleanValues(this, method));
+	},
+
+	run: function(){
+		Object.run(arguments);
+	}
+
+});
 
 
 /*
@@ -1551,11 +2453,11 @@ Element.implement({
 /*
 ---
 
-script: Class.Binds.js
+script: Elements.From.js
 
-name: Class.Binds
+name: Elements.From
 
-description: Automagically binds specified methods in a class to the instance of the class.
+description: Returns a collection of elements from a string of html.
 
 license: MIT-style license
 
@@ -1563,111 +2465,295 @@ authors:
   - Aaron Newton
 
 requires:
-  - Core/Class
+  - Core/String
+  - Core/Element
   - /MooTools.More
 
-provides: [Class.Binds]
+provides: [Elements.from, Elements.From]
 
 ...
 */
 
-Class.Mutators.Binds = function(binds){
-	if (!this.prototype.initialize) this.implement('initialize', function(){});
-	return binds;
-};
+Elements.from = function(text, excludeScripts){
+	if (excludeScripts || excludeScripts == null) text = text.stripScripts();
 
-Class.Mutators.initialize = function(initialize){
-	return function(){
-		Array.from(this.Binds).each(function(name){
-			var original = this[name];
-			if (original) this[name] = original.bind(this);
-		}, this);
-		return initialize.apply(this, arguments);
-	};
+	var container, match = text.match(/^\s*<(t[dhr]|tbody|tfoot|thead)/i);
+
+	if (match){
+		container = new Element('table');
+		var tag = match[1].toLowerCase();
+		if (['td', 'th', 'tr'].contains(tag)){
+			container = new Element('tbody').inject(container);
+			if (tag != 'tr') container = new Element('tr').inject(container);
+		}
+	}
+
+	return (container || new Element('div')).set('html', text).getChildren();
 };
 
 
 /*
 ---
 
-script: Class.Occlude.js
+name: Element.Event.Pseudos
 
-name: Class.Occlude
+description: Adds the functionality to add pseudo events for Elements
 
-description: Prevents a class from being applied to a DOM element twice.
-
-license: MIT-style license.
+license: MIT-style license
 
 authors:
-  - Aaron Newton
+  - Arian Stolwijk
 
-requires:
-  - Core/Class
-  - Core/Element
-  - /MooTools.More
+requires: [Core/Element.Event, Events.Pseudos]
 
-provides: [Class.Occlude]
+provides: [Element.Event.Pseudos]
 
 ...
 */
 
-Class.Occlude = new Class({
+(function(){
 
-	occlude: function(property, element){
-		element = document.id(element || this.element);
-		var instance = element.retrieve(property || this.property);
-		if (instance && !this.occluded)
-			return (this.occluded = instance);
+var pseudos = {},
+	copyFromEvents = ['once', 'throttle', 'pause'],
+	count = copyFromEvents.length;
 
-		this.occluded = false;
-		element.store(property || this.property, this);
-		return this.occluded;
+while (count--) pseudos[copyFromEvents[count]] = Events.lookupPseudo(copyFromEvents[count]);
+
+Event.definePseudo = function(key, listener){
+	pseudos[key] = Type.isFunction(listener) ? {listener: listener} : listener;
+	return this;
+};
+
+var proto = Element.prototype;
+[Element, Window, Document].invoke('implement', Events.Pseudos(pseudos, proto.addEvent, proto.removeEvent));
+
+}).call(this);
+
+
+/*
+---
+
+name: Element.Event.Pseudos.Keys
+
+description: Adds functionality fire events if certain keycombinations are pressed
+
+license: MIT-style license
+
+authors:
+  - Arian Stolwijk
+
+requires: [Element.Event.Pseudos]
+
+provides: [Element.Event.Pseudos.Keys]
+
+...
+*/
+
+(function(){
+
+var keysStoreKey = '$moo:keys-pressed',
+	keysKeyupStoreKey = '$moo:keys-keyup';
+
+
+Event.definePseudo('keys', function(split, fn, args){
+
+	var event = args[0],
+		keys = [],
+		pressed = this.retrieve(keysStoreKey, []);
+
+	keys.append(split.value.replace('++', function(){
+		keys.push('+'); // shift++ and shift+++a
+		return '';
+	}).split('+'));
+
+	pressed.include(event.key);
+
+	if (keys.every(function(key){
+		return pressed.contains(key);
+	})) fn.apply(this, args);
+
+	this.store(keysStoreKey, pressed);
+
+	if (!this.retrieve(keysKeyupStoreKey)){
+		var keyup = function(event){
+			(function(){
+				pressed = this.retrieve(keysStoreKey, []).erase(event.key);
+				this.store(keysStoreKey, pressed);
+			}).delay(0, this); // Fix for IE
+		};
+		this.store(keysKeyupStoreKey, keyup).addEvent('keyup', keyup);
 	}
 
 });
 
+Object.append(Event.Keys, {
+	'shift': 16,
+	'control': 17,
+	'alt': 18,
+	'capslock': 20,
+	'pageup': 33,
+	'pagedown': 34,
+	'end': 35,
+	'home': 36,
+	'numlock': 144,
+	'scrolllock': 145,
+	';': 186,
+	'=': 187,
+	',': 188,
+	'-': Browser.firefox ? 109 : 189,
+	'.': 190,
+	'/': 191,
+	'`': 192,
+	'[': 219,
+	'\\': 220,
+	']': 221,
+	"'": 222,
+	'+': 107
+});
+
+}).call(this);
+
 
 /*
 ---
 
-script: Class.Refactor.js
+script: Element.Delegation.js
 
-name: Class.Refactor
+name: Element.Delegation
 
-description: Extends a class onto itself with new property, preserving any items attached to the class's namespace.
+description: Extends the Element native object to include the delegate method for more efficient event management.
+
+credits:
+  - "Event checking based on the work of Daniel Steigerwald. License: MIT-style license. Copyright: Copyright (c) 2008 Daniel Steigerwald, daniel.steigerwald.cz"
 
 license: MIT-style license
 
 authors:
   - Aaron Newton
+  - Daniel Steigerwald
 
-requires:
-  - Core/Class
-  - /MooTools.More
+requires: [/MooTools.More, Element.Event.Pseudos]
 
-# Some modules declare themselves dependent on Class.Refactor
-provides: [Class.refactor, Class.Refactor]
+provides: [Element.Delegation]
 
 ...
 */
 
-Class.refactor = function(original, refactors){
+(function(){
 
-	Object.each(refactors, function(item, name){
-		var origin = original.prototype[name];
-		if (origin && origin.$origin) origin = origin.$origin;
-		original.implement(name, (typeof item == 'function') ? function(){
-			var old = this.previous;
-			this.previous = origin || function(){};
-			var value = item.apply(this, arguments);
-			this.previous = old;
-			return value;
-		} : item);
-	});
+var eventListenerSupport = !(window.attachEvent && !window.addEventListener),
+	nativeEvents = Element.NativeEvents;
 
-	return original;
+nativeEvents.focusin = 2;
+nativeEvents.focusout = 2;
 
+var check = function(split, target, event){
+	var elementEvent = Element.Events[split.event], condition;
+	if (elementEvent) condition = elementEvent.condition;
+	return Slick.match(target, split.value) && (!condition || condition.call(target, event));
 };
+
+var formObserver = function(eventName){
+
+	var $delegationKey = '$delegation:';
+
+	return {
+		base: 'focusin',
+
+		onRemove: function(element){
+			element.retrieve($delegationKey + 'forms', []).each(function(el){
+				el.retrieve($delegationKey + 'listeners', []).each(function(listener){
+					el.removeEvent(eventName, listener);
+				});
+				el.eliminate($delegationKey + eventName + 'listeners')
+					.eliminate($delegationKey + eventName + 'originalFn');
+			});
+		},
+
+		listener: function(split, fn, args, monitor, options){
+			var event = args[0],
+				forms = this.retrieve($delegationKey + 'forms', []),
+				target = event.target,
+				form = (target.get('tag') == 'form') ? target : event.target.getParent('form'),
+				formEvents = form.retrieve($delegationKey + 'originalFn', []),
+				formListeners = form.retrieve($delegationKey + 'listeners', []);
+
+			forms.include(form);
+			this.store($delegationKey + 'forms', forms);
+
+			if (!formEvents.contains(fn)){
+				var formListener = function(event){
+					if (check(split, this, event)) fn.call(this, event);
+				};
+				form.addEvent(eventName, formListener);
+
+				formEvents.push(fn);
+				formListeners.push(formListener);
+
+				form.store($delegationKey + eventName + 'originalFn', formEvents)
+					.store($delegationKey + eventName + 'listeners', formListeners);
+			}
+		}
+	};
+};
+
+var inputObserver = function(eventName){
+	return {
+		base: 'focusin',
+		listener: function(split, fn, args){
+			var events = {blur: function(){
+				this.removeEvents(events);
+			}};
+			events[eventName] = function(event){
+				if (check(split, this, event)) fn.call(this, event);
+			};
+			args[0].target.addEvents(events);
+		}
+	};
+};
+
+var eventOptions = {
+	mouseenter: {
+		base: 'mouseover'
+	},
+	mouseleave: {
+		base: 'mouseout'
+	},
+	focus: {
+		base: 'focus' + (eventListenerSupport ? '' : 'in'),
+		args: [true]
+	},
+	blur: {
+		base: eventListenerSupport ? 'blur' : 'focusout',
+		args: [true]
+	}
+};
+
+if (!eventListenerSupport) Object.append(eventOptions, {
+	submit: formObserver('submit'),
+	reset: formObserver('reset'),
+	change: inputObserver('change'),
+	select: inputObserver('select')
+});
+
+
+Event.definePseudo('relay', {
+	listener: function(split, fn, args, monitor, options){
+		var event = args[0];
+
+		for (var target = event.target; target && target != this; target = target.parentNode){
+			var finalTarget = document.id(target);
+			if (check(split, finalTarget, event)){
+				if (finalTarget) fn.call(finalTarget, event, finalTarget);
+				return;
+			}
+		}
+	},
+	options: eventOptions
+});
+
+}).call(this);
+
 
 
 /*
@@ -1838,6 +2924,138 @@ Element.implement({
 	}
 
 });
+
+}).call(this);
+
+
+/*
+---
+
+script: Element.Pin.js
+
+name: Element.Pin
+
+description: Extends the Element native object to include the pin method useful for fixed positioning for elements.
+
+license: MIT-style license
+
+authors:
+  - Aaron Newton
+
+requires:
+  - Core/Element.Event
+  - Core/Element.Dimensions
+  - Core/Element.Style
+  - /MooTools.More
+
+provides: [Element.Pin]
+
+...
+*/
+
+(function(){
+	var supportsPositionFixed = false,
+		supportTested = false;
+
+	var testPositionFixed = function(){
+		var test = new Element('div').setStyles({
+			position: 'fixed',
+			top: 0,
+			right: 0
+		}).inject(document.body);
+		supportsPositionFixed = (test.offsetTop === 0);
+		test.dispose();
+		supportTested = true;
+	};
+
+	Element.implement({
+
+		pin: function(enable, forceScroll){
+			if (!supportTested) testPositionFixed();
+			if (this.getStyle('display') == 'none') return this;
+
+			var pinnedPosition,
+				scroll = window.getScroll(),
+				parent,
+				scrollFixer;
+
+			if (enable !== false){
+				pinnedPosition = this.getPosition(supportsPositionFixed ? document.body : this.getOffsetParent());
+				if (!this.retrieve('pin:_pinned')){
+					var currentPosition = {
+						top: pinnedPosition.y - scroll.y,
+						left: pinnedPosition.x - scroll.x
+					};
+
+					if (supportsPositionFixed && !forceScroll){
+						this.setStyle('position', 'fixed').setStyles(currentPosition);
+					} else {
+
+						parent = this.getOffsetParent();
+						var position = this.getPosition(parent),
+							styles = this.getStyles('left', 'top');
+
+						if (parent && styles.left == 'auto' || styles.top == 'auto') this.setPosition(position);
+						if (this.getStyle('position') == 'static') this.setStyle('position', 'absolute');
+
+						position = {
+							x: styles.left.toInt() - scroll.x,
+							y: styles.top.toInt() - scroll.y
+						};
+
+						scrollFixer = function(){
+							if (!this.retrieve('pin:_pinned')) return;
+							var scroll = window.getScroll();
+							this.setStyles({
+								left: position.x + scroll.x,
+								top: position.y + scroll.y
+							});
+						}.bind(this);
+
+						this.store('pin:_scrollFixer', scrollFixer);
+						window.addEvent('scroll', scrollFixer);
+					}
+					this.store('pin:_pinned', true);
+				}
+
+			} else {
+				if (!this.retrieve('pin:_pinned')) return this;
+
+				parent = this.getParent();
+				var offsetParent = (parent.getComputedStyle('position') != 'static' ? parent : parent.getOffsetParent());
+
+				pinnedPosition = this.getPosition(offsetParent);
+
+				this.store('pin:_pinned', false);
+				scrollFixer = this.retrieve('pin:_scrollFixer');
+				if (!scrollFixer){
+					this.setStyles({
+						position: 'absolute',
+						top: pinnedPosition.y + scroll.y,
+						left: pinnedPosition.x + scroll.x
+					});
+				} else {
+					this.store('pin:_scrollFixer', null);
+					window.removeEvent('scroll', scrollFixer);
+				}
+				this.removeClass('isPinned');
+			}
+			return this;
+		},
+
+		unpin: function(){
+			return this.pin(false);
+		},
+
+		togglePin: function(){
+			return this.pin(!this.retrieve('pin:_pinned'));
+		}
+
+	});
+
+//<1.2compat>
+Element.alias('togglepin', 'togglePin');
+//</1.2compat>
 
 }).call(this);
 
@@ -2068,6 +3286,84 @@ Element.implement({
 });
 
 }).call(this);
+
+
+/*
+---
+
+script: Element.Shortcuts.js
+
+name: Element.Shortcuts
+
+description: Extends the Element native object to include some shortcut methods.
+
+license: MIT-style license
+
+authors:
+  - Aaron Newton
+
+requires:
+  - Core/Element.Style
+  - /MooTools.More
+
+provides: [Element.Shortcuts]
+
+...
+*/
+
+Element.implement({
+
+	isDisplayed: function(){
+		return this.getStyle('display') != 'none';
+	},
+
+	isVisible: function(){
+		var w = this.offsetWidth,
+			h = this.offsetHeight;
+		return (w == 0 && h == 0) ? false : (w > 0 && h > 0) ? true : this.style.display != 'none';
+	},
+
+	toggle: function(){
+		return this[this.isDisplayed() ? 'hide' : 'show']();
+	},
+
+	hide: function(){
+		var d;
+		try {
+			//IE fails here if the element is not in the dom
+			d = this.getStyle('display');
+		} catch(e){}
+		if (d == 'none') return this;
+		return this.store('element:_originalDisplay', d || '').setStyle('display', 'none');
+	},
+
+	show: function(display){
+		if (!display && this.isDisplayed()) return this;
+		display = display || this.retrieve('element:_originalDisplay') || 'block';
+		return this.setStyle('display', (display == 'none') ? 'block' : display);
+	},
+
+	swapClass: function(remove, add){
+		return this.removeClass(remove).addClass(add);
+	}
+
+});
+
+Document.implement({
+
+	clearSelection: function(){
+		if (window.getSelection){
+			var selection = window.getSelection();
+			if (selection && selection.removeAllRanges) selection.removeAllRanges();
+		} else if (document.selection && document.selection.empty){
+			try {
+				//IE fails here if selected element is not in dom
+				document.selection.empty();
+			} catch(e){}
+		}
+	}
+
+});
 
 
 /*
@@ -2636,368 +3932,6 @@ Element.implement({
 /*
 ---
 
-name: Events.Pseudos
-
-description: Adds the functionality to add pseudo events
-
-license: MIT-style license
-
-authors:
-  - Arian Stolwijk
-
-requires: [Core/Class.Extras, Core/Slick.Parser, More/MooTools.More]
-
-provides: [Events.Pseudos]
-
-...
-*/
-
-Events.Pseudos = function(pseudos, addEvent, removeEvent){
-
-	var storeKey = 'monitorEvents:';
-
-	var storageOf = function(object){
-		return {
-			store: object.store ? function(key, value){
-				object.store(storeKey + key, value);
-			} : function(key, value){
-				(object.$monitorEvents || (object.$monitorEvents = {}))[key] = value;
-			},
-			retrieve: object.retrieve ? function(key, dflt){
-				return object.retrieve(storeKey + key, dflt);
-			} : function(key, dflt){
-				if (!object.$monitorEvents) return dflt;
-				return object.$monitorEvents[key] || dflt;
-			}
-		};
-	};
-
-	var splitType = function(type){
-		if (type.indexOf(':') == -1 || !pseudos) return null;
-
-		var parsed = Slick.parse(type).expressions[0][0],
-			parsedPseudos = parsed.pseudos,
-			l = parsedPseudos.length,
-			splits = [];
-
-		while (l--) if (pseudos[parsedPseudos[l].key]){
-			splits.push({
-				event: parsed.tag,
-				value: parsedPseudos[l].value,
-				pseudo: parsedPseudos[l].key,
-				original: type
-			});
-		}
-
-		return splits.length ? splits : null;
-	};
-
-	var mergePseudoOptions = function(split){
-		return Object.merge.apply(this, split.map(function(item){
-			return pseudos[item.pseudo].options || {};
-		}));
-	};
-
-	return {
-
-		addEvent: function(type, fn, internal){
-			var split = splitType(type);
-			if (!split) return addEvent.call(this, type, fn, internal);
-
-			var storage = storageOf(this),
-				events = storage.retrieve(type, []),
-				eventType = split[0].event,
-				options = mergePseudoOptions(split),
-				stack = fn,
-				eventOptions = options[eventType] || {},
-				args = Array.slice(arguments, 2),
-				self = this,
-				monitor;
-
-			if (eventOptions.args) args.append(Array.from(eventOptions.args));
-			if (eventOptions.base) eventType = eventOptions.base;
-			if (eventOptions.onAdd) eventOptions.onAdd(this);
-
-			split.each(function(item){
-				var stackFn = stack;
-				stack = function(){
-					(eventOptions.listener || pseudos[item.pseudo].listener).call(self, item, stackFn, arguments, monitor, options);
-				};
-			});
-			monitor = stack.bind(this);
-
-			events.include({event: fn, monitor: monitor});
-			storage.store(type, events);
-
-			addEvent.apply(this, [type, fn].concat(args));
-			return addEvent.apply(this, [eventType, monitor].concat(args));
-		},
-
-		removeEvent: function(type, fn){
-			var split = splitType(type);
-			if (!split) return removeEvent.call(this, type, fn);
-
-			var storage = storageOf(this),
-				events = storage.retrieve(type);
-			if (!events) return this;
-
-			var eventType = split[0].event,
-				options = mergePseudoOptions(split),
-				eventOptions = options[eventType] || {},
-				args = Array.slice(arguments, 2);
-
-			if (eventOptions.args) args.append(Array.from(eventOptions.args));
-			if (eventOptions.base) eventType = eventOptions.base;
-			if (eventOptions.onRemove) eventOptions.onRemove(this);
-
-			removeEvent.apply(this, [type, fn].concat(args));
-			events.each(function(monitor, i){
-				if (!fn || monitor.event == fn) removeEvent.apply(this, [eventType, monitor.monitor].concat(args));
-				delete events[i];
-			}, this);
-
-			storage.store(type, events);
-			return this;
-		}
-
-	};
-
-};
-
-(function(){
-
-var pseudos = {
-
-	once: {
-		listener: function(split, fn, args, monitor){
-			fn.apply(this, args);
-			this.removeEvent(split.event, monitor)
-				.removeEvent(split.original, fn);
-		}
-	},
-
-	throttle: {
-		listener: function(split, fn, args){
-			if (!fn._throttled){
-				fn.apply(this, args);
-				fn._throttled = setTimeout(function(){
-					fn._throttled = false;
-				}, split.value || 250);
-			}
-		}
-	},
-
-	pause: {
-		listener: function(split, fn, args){
-			clearTimeout(fn._pause);
-			fn._pause = fn.delay(split.value || 250, this, args);
-		}
-	}
-
-};
-
-Events.definePseudo = function(key, listener){
-	pseudos[key] = Type.isFunction(listener) ? {listener: listener} : listener;
-	return this;
-};
-
-Events.lookupPseudo = function(key){
-	return pseudos[key];
-};
-
-var proto = Events.prototype;
-Events.implement(Events.Pseudos(pseudos, proto.addEvent, proto.removeEvent));
-
-['Request', 'Fx'].each(function(klass){
-	if (this[klass]) this[klass].implement(Events.prototype);
-});
-
-}).call(this);
-
-
-/*
----
-
-name: Element.Event.Pseudos
-
-description: Adds the functionality to add pseudo events for Elements
-
-license: MIT-style license
-
-authors:
-  - Arian Stolwijk
-
-requires: [Core/Element.Event, Events.Pseudos]
-
-provides: [Element.Event.Pseudos]
-
-...
-*/
-
-(function(){
-
-var pseudos = {},
-	copyFromEvents = ['once', 'throttle', 'pause'],
-	count = copyFromEvents.length;
-
-while (count--) pseudos[copyFromEvents[count]] = Events.lookupPseudo(copyFromEvents[count]);
-
-Event.definePseudo = function(key, listener){
-	pseudos[key] = Type.isFunction(listener) ? {listener: listener} : listener;
-	return this;
-};
-
-var proto = Element.prototype;
-[Element, Window, Document].invoke('implement', Events.Pseudos(pseudos, proto.addEvent, proto.removeEvent));
-
-}).call(this);
-
-
-/*
----
-
-script: Element.Delegation.js
-
-name: Element.Delegation
-
-description: Extends the Element native object to include the delegate method for more efficient event management.
-
-credits:
-  - "Event checking based on the work of Daniel Steigerwald. License: MIT-style license. Copyright: Copyright (c) 2008 Daniel Steigerwald, daniel.steigerwald.cz"
-
-license: MIT-style license
-
-authors:
-  - Aaron Newton
-  - Daniel Steigerwald
-
-requires: [/MooTools.More, Element.Event.Pseudos]
-
-provides: [Element.Delegation]
-
-...
-*/
-
-(function(){
-
-var eventListenerSupport = !(window.attachEvent && !window.addEventListener),
-	nativeEvents = Element.NativeEvents;
-
-nativeEvents.focusin = 2;
-nativeEvents.focusout = 2;
-
-var check = function(split, target, event){
-	var elementEvent = Element.Events[split.event], condition;
-	if (elementEvent) condition = elementEvent.condition;
-	return Slick.match(target, split.value) && (!condition || condition.call(target, event));
-};
-
-var formObserver = function(eventName){
-
-	var $delegationKey = '$delegation:';
-
-	return {
-		base: 'focusin',
-
-		onRemove: function(element){
-			element.retrieve($delegationKey + 'forms', []).each(function(el){
-				el.retrieve($delegationKey + 'listeners', []).each(function(listener){
-					el.removeEvent(eventName, listener);
-				});
-				el.eliminate($delegationKey + eventName + 'listeners')
-					.eliminate($delegationKey + eventName + 'originalFn');
-			});
-		},
-
-		listener: function(split, fn, args, monitor, options){
-			var event = args[0],
-				forms = this.retrieve($delegationKey + 'forms', []),
-				target = event.target,
-				form = (target.get('tag') == 'form') ? target : event.target.getParent('form'),
-				formEvents = form.retrieve($delegationKey + 'originalFn', []),
-				formListeners = form.retrieve($delegationKey + 'listeners', []);
-
-			forms.include(form);
-			this.store($delegationKey + 'forms', forms);
-
-			if (!formEvents.contains(fn)){
-				var formListener = function(event){
-					if (check(split, this, event)) fn.call(this, event);
-				};
-				form.addEvent(eventName, formListener);
-
-				formEvents.push(fn);
-				formListeners.push(formListener);
-
-				form.store($delegationKey + eventName + 'originalFn', formEvents)
-					.store($delegationKey + eventName + 'listeners', formListeners);
-			}
-		}
-	};
-};
-
-var inputObserver = function(eventName){
-	return {
-		base: 'focusin',
-		listener: function(split, fn, args){
-			var events = {blur: function(){
-				this.removeEvents(events);
-			}};
-			events[eventName] = function(event){
-				if (check(split, this, event)) fn.call(this, event);
-			};
-			args[0].target.addEvents(events);
-		}
-	};
-};
-
-var eventOptions = {
-	mouseenter: {
-		base: 'mouseover'
-	},
-	mouseleave: {
-		base: 'mouseout'
-	},
-	focus: {
-		base: 'focus' + (eventListenerSupport ? '' : 'in'),
-		args: [true]
-	},
-	blur: {
-		base: eventListenerSupport ? 'blur' : 'focusout',
-		args: [true]
-	}
-};
-
-if (!eventListenerSupport) Object.append(eventOptions, {
-	submit: formObserver('submit'),
-	reset: formObserver('reset'),
-	change: inputObserver('change'),
-	select: inputObserver('select')
-});
-
-
-Event.definePseudo('relay', {
-	listener: function(split, fn, args, monitor, options){
-		var event = args[0];
-
-		for (var target = event.target; target && target != this; target = target.parentNode){
-			var finalTarget = document.id(target);
-			if (check(split, finalTarget, event)){
-				if (finalTarget) fn.call(finalTarget, event, finalTarget);
-				return;
-			}
-		}
-	},
-	options: eventOptions
-});
-
-}).call(this);
-
-
-
-/*
----
-
 script: Form.Request.js
 
 name: Form.Request
@@ -3211,84 +4145,6 @@ if (!window.Form) window.Form = {};
 	});
 
 }).call(this);
-
-
-/*
----
-
-script: Element.Shortcuts.js
-
-name: Element.Shortcuts
-
-description: Extends the Element native object to include some shortcut methods.
-
-license: MIT-style license
-
-authors:
-  - Aaron Newton
-
-requires:
-  - Core/Element.Style
-  - /MooTools.More
-
-provides: [Element.Shortcuts]
-
-...
-*/
-
-Element.implement({
-
-	isDisplayed: function(){
-		return this.getStyle('display') != 'none';
-	},
-
-	isVisible: function(){
-		var w = this.offsetWidth,
-			h = this.offsetHeight;
-		return (w == 0 && h == 0) ? false : (w > 0 && h > 0) ? true : this.style.display != 'none';
-	},
-
-	toggle: function(){
-		return this[this.isDisplayed() ? 'hide' : 'show']();
-	},
-
-	hide: function(){
-		var d;
-		try {
-			//IE fails here if the element is not in the dom
-			d = this.getStyle('display');
-		} catch(e){}
-		if (d == 'none') return this;
-		return this.store('element:_originalDisplay', d || '').setStyle('display', 'none');
-	},
-
-	show: function(display){
-		if (!display && this.isDisplayed()) return this;
-		display = display || this.retrieve('element:_originalDisplay') || 'block';
-		return this.setStyle('display', (display == 'none') ? 'block' : display);
-	},
-
-	swapClass: function(remove, add){
-		return this.removeClass(remove).addClass(add);
-	}
-
-});
-
-Document.implement({
-
-	clearSelection: function(){
-		if (window.getSelection){
-			var selection = window.getSelection();
-			if (selection && selection.removeAllRanges) selection.removeAllRanges();
-		} else if (document.selection && document.selection.empty){
-			try {
-				//IE fails here if selected element is not in dom
-				document.selection.empty();
-			} catch(e){}
-		}
-	}
-
-});
 
 
 /*
@@ -3537,48 +4393,6 @@ Element.implement({
 });
 
 }).call(this);
-
-
-/*
----
-
-script: Elements.From.js
-
-name: Elements.From
-
-description: Returns a collection of elements from a string of html.
-
-license: MIT-style license
-
-authors:
-  - Aaron Newton
-
-requires:
-  - Core/String
-  - Core/Element
-  - /MooTools.More
-
-provides: [Elements.from, Elements.From]
-
-...
-*/
-
-Elements.from = function(text, excludeScripts){
-	if (excludeScripts || excludeScripts == null) text = text.stripScripts();
-
-	var container, match = text.match(/^\s*<(t[dhr]|tbody|tfoot|thead)/i);
-
-	if (match){
-		container = new Element('table');
-		var tag = match[1].toLowerCase();
-		if (['td', 'th', 'tr'].contains(tag)){
-			container = new Element('tbody').inject(container);
-			if (tag != 'tr') container = new Element('tr').inject(container);
-		}
-	}
-
-	return (container || new Element('div')).set('html', text).getChildren();
-};
 
 
 /*
@@ -5005,6 +5819,321 @@ Fx.Elements = new Class({
 /*
 ---
 
+script: Fx.Accordion.js
+
+name: Fx.Accordion
+
+description: An Fx.Elements extension which allows you to easily create accordion type controls.
+
+license: MIT-style license
+
+authors:
+  - Valerio Proietti
+
+requires:
+  - Core/Element.Event
+  - /Fx.Elements
+
+provides: [Fx.Accordion]
+
+...
+*/
+
+Fx.Accordion = new Class({
+
+	Extends: Fx.Elements,
+
+	options: {/*
+		onActive: function(toggler, section){},
+		onBackground: function(toggler, section){},*/
+		fixedHeight: false,
+		fixedWidth: false,
+		display: 0,
+		show: false,
+		height: true,
+		width: false,
+		opacity: true,
+		alwaysHide: false,
+		trigger: 'click',
+		initialDisplayFx: true,
+		resetHeight: true
+	},
+
+	initialize: function(){
+		var defined = function(obj){
+			return obj != null;
+		};
+
+		var params = Array.link(arguments, {
+			'container': Type.isElement, //deprecated
+			'options': Type.isObject,
+			'togglers': defined,
+			'elements': defined
+		});
+		this.parent(params.elements, params.options);
+
+		var options = this.options,
+			togglers = this.togglers = $$(params.togglers);
+
+		this.previous = -1;
+		this.internalChain = new Chain();
+
+		if (options.alwaysHide) this.options.link = 'chain';
+
+		if (options.show || this.options.show === 0){
+			options.display = false;
+			this.previous = options.show;
+		}
+
+		if (options.start){
+			options.display = false;
+			options.show = false;
+		}
+
+		var effects = this.effects = {};
+
+		if (options.opacity) effects.opacity = 'fullOpacity';
+		if (options.width) effects.width = options.fixedWidth ? 'fullWidth' : 'offsetWidth';
+		if (options.height) effects.height = options.fixedHeight ? 'fullHeight' : 'scrollHeight';
+
+		for (var i = 0, l = togglers.length; i < l; i++) this.addSection(togglers[i], this.elements[i]);
+
+		this.elements.each(function(el, i){
+			if (options.show === i){
+				this.fireEvent('active', [togglers[i], el]);
+			} else {
+				for (var fx in effects) el.setStyle(fx, 0);
+			}
+		}, this);
+
+		if (options.display || options.display === 0 || options.initialDisplayFx === false){
+			this.display(options.display, options.initialDisplayFx);
+		}
+
+		if (options.fixedHeight !== false) options.resetHeight = false;
+		this.addEvent('complete', this.internalChain.callChain.bind(this.internalChain));
+	},
+
+	addSection: function(toggler, element){
+		toggler = document.id(toggler);
+		element = document.id(element);
+		this.togglers.include(toggler);
+		this.elements.include(element);
+
+		var togglers = this.togglers,
+			options = this.options,
+			test = togglers.contains(toggler),
+			idx = togglers.indexOf(toggler),
+			displayer = this.display.pass(idx, this);
+
+		toggler.store('accordion:display', displayer)
+			.addEvent(options.trigger, displayer);
+
+		if (options.height) element.setStyles({'padding-top': 0, 'border-top': 'none', 'padding-bottom': 0, 'border-bottom': 'none'});
+		if (options.width) element.setStyles({'padding-left': 0, 'border-left': 'none', 'padding-right': 0, 'border-right': 'none'});
+
+		element.fullOpacity = 1;
+		if (options.fixedWidth) element.fullWidth = options.fixedWidth;
+		if (options.fixedHeight) element.fullHeight = options.fixedHeight;
+		element.setStyle('overflow', 'hidden');
+
+		if (!test) for (var fx in this.effects){
+			element.setStyle(fx, 0);
+		}
+		return this;
+	},
+
+	removeSection: function(toggler, displayIndex){
+		var togglers = this.togglers,
+			idx = togglers.indexOf(toggler),
+			element = this.elements[idx];
+
+		var remover = function(){
+			togglers.erase(toggler);
+			this.elements.erase(element);
+			this.detach(toggler);
+		}.bind(this);
+
+		if (this.now == idx || displayIndex != null){
+			this.display(displayIndex != null ? displayIndex : (idx - 1 >= 0 ? idx - 1 : 0)).chain(remover);
+		} else {
+			remover();
+		}
+		return this;
+	},
+
+	detach: function(toggler){
+		var remove = function(toggler){
+			toggler.removeEvent(this.options.trigger, toggler.retrieve('accordion:display'));
+		}.bind(this);
+
+		if (!toggler) this.togglers.each(remove);
+		else remove(toggler);
+		return this;
+	},
+
+	display: function(index, useFx){
+		if (!this.check(index, useFx)) return this;
+
+		var obj = {},
+			elements = this.elements,
+			options = this.options,
+			effects = this.effects;
+
+		if (useFx == null) useFx = true;
+		if (typeOf(index) == 'element') index = elements.indexOf(index);
+		if (index == this.previous && !options.alwaysHide) return this;
+
+		if (options.resetHeight){
+			var prev = elements[this.previous];
+			if (prev && !this.selfHidden){
+				for (var fx in effects) prev.setStyle(fx, prev[effects[fx]]);
+			}
+		}
+
+		if ((this.timer && options.link == 'chain') || (index === this.previous && !options.alwaysHide)) return this;
+
+		this.previous = index;
+		this.selfHidden = false;
+
+		elements.each(function(el, i){
+			obj[i] = {};
+			var hide;
+			if (i != index){
+				hide = true;
+			} else if (options.alwaysHide && ((el.offsetHeight > 0 && options.height) || el.offsetWidth > 0 && options.width)){
+				hide = true;
+				this.selfHidden = true;
+			}
+			this.fireEvent(hide ? 'background' : 'active', [this.togglers[i], el]);
+			for (var fx in effects) obj[i][fx] = hide ? 0 : el[effects[fx]];
+			if (!useFx && !hide && options.resetHeight) obj[i].height = 'auto';
+		}, this);
+
+		this.internalChain.clearChain();
+		this.internalChain.chain(function(){
+			if (options.resetHeight && !this.selfHidden){
+				var el = elements[index];
+				if (el) el.setStyle('height', 'auto');
+			}
+		}.bind(this));
+
+		return useFx ? this.start(obj) : this.set(obj);
+	}
+
+});
+
+/*<1.2compat>*/
+/*
+	Compatibility with 1.2.0
+*/
+var Accordion = new Class({
+
+	Extends: Fx.Accordion,
+
+	initialize: function(){
+		this.parent.apply(this, arguments);
+		var params = Array.link(arguments, {'container': Type.isElement});
+		this.container = params.container;
+	},
+
+	addSection: function(toggler, element, pos){
+		toggler = document.id(toggler);
+		element = document.id(element);
+
+		var test = this.togglers.contains(toggler);
+		var len = this.togglers.length;
+		if (len && (!test || pos)){
+			pos = pos != null ? pos : len - 1;
+			toggler.inject(this.togglers[pos], 'before');
+			element.inject(toggler, 'after');
+		} else if (this.container && !test){
+			toggler.inject(this.container);
+			element.inject(this.container);
+		}
+		return this.parent.apply(this, arguments);
+	}
+
+});
+/*</1.2compat>*/
+
+
+/*
+---
+
+script: Fx.Move.js
+
+name: Fx.Move
+
+description: Defines Fx.Move, a class that works with Element.Position.js to transition an element from one location to another.
+
+license: MIT-style license
+
+authors:
+  - Aaron Newton
+
+requires:
+  - Core/Fx.Morph
+  - /Element.Position
+
+provides: [Fx.Move]
+
+...
+*/
+
+Fx.Move = new Class({
+
+	Extends: Fx.Morph,
+
+	options: {
+		relativeTo: document.body,
+		position: 'center',
+		edge: false,
+		offset: {x: 0, y: 0}
+	},
+
+	start: function(destination){
+		var element = this.element,
+			topLeft = element.getStyles('top', 'left');
+		if (topLeft.top == 'auto' || topLeft.left == 'auto'){
+			element.setPosition(element.getPosition(element.getOffsetParent()));
+		}
+		return this.parent(element.position(Object.merge({}, this.options, destination, {returnPos: true})));
+	}
+
+});
+
+Element.Properties.move = {
+
+	set: function(options){
+		this.get('move').cancel().setOptions(options);
+		return this;
+	},
+
+	get: function(){
+		var move = this.retrieve('move');
+		if (!move){
+			move = new Fx.Move(this, {link: 'cancel'});
+			this.store('move', move);
+		}
+		return move;
+	}
+
+};
+
+Element.implement({
+
+	move: function(options){
+		this.get('move').start(options);
+		return this;
+	}
+
+});
+
+
+/*
+---
+
 script: Fx.Scroll.js
 
 name: Fx.Scroll
@@ -5358,6 +6487,252 @@ Element.implement({
 /*
 ---
 
+script: Fx.SmoothScroll.js
+
+name: Fx.SmoothScroll
+
+description: Class for creating a smooth scrolling effect to all internal links on the page.
+
+license: MIT-style license
+
+authors:
+  - Valerio Proietti
+
+requires:
+  - Core/Slick.Finder
+  - /Fx.Scroll
+
+provides: [Fx.SmoothScroll]
+
+...
+*/
+
+/*<1.2compat>*/var SmoothScroll = /*</1.2compat>*/Fx.SmoothScroll = new Class({
+
+	Extends: Fx.Scroll,
+
+	options: {
+		axes: ['x', 'y']
+	},
+
+	initialize: function(options, context){
+		context = context || document;
+		this.doc = context.getDocument();
+		this.parent(this.doc, options);
+
+		var win = context.getWindow(),
+			location = win.location.href.match(/^[^#]*/)[0] + '#',
+			links = $$(this.options.links || this.doc.links);
+
+		links.each(function(link){
+			if (link.href.indexOf(location) != 0) return;
+			var anchor = link.href.substr(location.length);
+			if (anchor) this.useLink(link, anchor);
+		}, this);
+
+		this.addEvent('complete', function(){
+			win.location.hash = this.anchor;
+			this.element.scrollTo(this.to[0], this.to[1]);
+		}, true);
+	},
+
+	useLink: function(link, anchor){
+
+		link.addEvent('click', function(event){
+			var el = document.id(anchor) || this.doc.getElement('a[name=' + anchor + ']');
+			if (!el) return;
+
+			event.preventDefault();
+			this.toElement(el, this.options.axes).chain(function(){
+				this.fireEvent('scrolledTo', [link, el]);
+			}.bind(this));
+
+			this.anchor = anchor;
+
+		}.bind(this));
+
+		return this;
+	}
+});
+
+
+/*
+---
+
+script: Fx.Sort.js
+
+name: Fx.Sort
+
+description: Defines Fx.Sort, a class that reorders lists with a transition.
+
+license: MIT-style license
+
+authors:
+  - Aaron Newton
+
+requires:
+  - Core/Element.Dimensions
+  - /Fx.Elements
+  - /Element.Measure
+
+provides: [Fx.Sort]
+
+...
+*/
+
+Fx.Sort = new Class({
+
+	Extends: Fx.Elements,
+
+	options: {
+		mode: 'vertical'
+	},
+
+	initialize: function(elements, options){
+		this.parent(elements, options);
+		this.elements.each(function(el){
+			if (el.getStyle('position') == 'static') el.setStyle('position', 'relative');
+		});
+		this.setDefaultOrder();
+	},
+
+	setDefaultOrder: function(){
+		this.currentOrder = this.elements.map(function(el, index){
+			return index;
+		});
+	},
+
+	sort: function(){
+		if (!this.check(arguments)) return this;
+		var newOrder = Array.flatten(arguments);
+
+		var top = 0,
+			left = 0,
+			next = {},
+			zero = {},
+			vert = this.options.mode == 'vertical';
+
+		var current = this.elements.map(function(el, index){
+			var size = el.getComputedSize({styles: ['border', 'padding', 'margin']});
+			var val;
+			if (vert){
+				val = {
+					top: top,
+					margin: size['margin-top'],
+					height: size.totalHeight
+				};
+				top += val.height - size['margin-top'];
+			} else {
+				val = {
+					left: left,
+					margin: size['margin-left'],
+					width: size.totalWidth
+				};
+				left += val.width;
+			}
+			var plane = vert ? 'top' : 'left';
+			zero[index] = {};
+			var start = el.getStyle(plane).toInt();
+			zero[index][plane] = start || 0;
+			return val;
+		}, this);
+
+		this.set(zero);
+		newOrder = newOrder.map(function(i){ return i.toInt(); });
+		if (newOrder.length != this.elements.length){
+			this.currentOrder.each(function(index){
+				if (!newOrder.contains(index)) newOrder.push(index);
+			});
+			if (newOrder.length > this.elements.length)
+				newOrder.splice(this.elements.length-1, newOrder.length - this.elements.length);
+		}
+		var margin = 0;
+		top = left = 0;
+		newOrder.each(function(item){
+			var newPos = {};
+			if (vert){
+				newPos.top = top - current[item].top - margin;
+				top += current[item].height;
+			} else {
+				newPos.left = left - current[item].left;
+				left += current[item].width;
+			}
+			margin = margin + current[item].margin;
+			next[item]=newPos;
+		}, this);
+		var mapped = {};
+		Array.clone(newOrder).sort().each(function(index){
+			mapped[index] = next[index];
+		});
+		this.start(mapped);
+		this.currentOrder = newOrder;
+
+		return this;
+	},
+
+	rearrangeDOM: function(newOrder){
+		newOrder = newOrder || this.currentOrder;
+		var parent = this.elements[0].getParent();
+		var rearranged = [];
+		this.elements.setStyle('opacity', 0);
+		//move each element and store the new default order
+		newOrder.each(function(index){
+			rearranged.push(this.elements[index].inject(parent).setStyles({
+				top: 0,
+				left: 0
+			}));
+		}, this);
+		this.elements.setStyle('opacity', 1);
+		this.elements = $$(rearranged);
+		this.setDefaultOrder();
+		return this;
+	},
+
+	getDefaultOrder: function(){
+		return this.elements.map(function(el, index){
+			return index;
+		});
+	},
+
+	getCurrentOrder: function(){
+		return this.currentOrder;
+	},
+
+	forward: function(){
+		return this.sort(this.getDefaultOrder());
+	},
+
+	backward: function(){
+		return this.sort(this.getDefaultOrder().reverse());
+	},
+
+	reverse: function(){
+		return this.sort(this.currentOrder.reverse());
+	},
+
+	sortByElements: function(elements){
+		return this.sort(elements.map(function(el){
+			return this.elements.indexOf(el);
+		}, this));
+	},
+
+	swap: function(one, two){
+		if (typeOf(one) == 'element') one = this.elements.indexOf(one);
+		if (typeOf(two) == 'element') two = this.elements.indexOf(two);
+
+		var newOrder = Array.clone(this.currentOrder);
+		newOrder[this.currentOrder.indexOf(one)] = two;
+		newOrder[this.currentOrder.indexOf(two)] = one;
+
+		return this.sort(newOrder);
+	}
+
+});
+
+
+/*
+---
+
 script: Drag.js
 
 name: Drag
@@ -5602,6 +6977,206 @@ Element.implement({
 /*
 ---
 
+script: Drag.Move.js
+
+name: Drag.Move
+
+description: A Drag extension that provides support for the constraining of draggables to containers and droppables.
+
+license: MIT-style license
+
+authors:
+  - Valerio Proietti
+  - Tom Occhinno
+  - Jan Kassens
+  - Aaron Newton
+  - Scott Kyle
+
+requires:
+  - Core/Element.Dimensions
+  - /Drag
+
+provides: [Drag.Move]
+
+...
+*/
+
+Drag.Move = new Class({
+
+	Extends: Drag,
+
+	options: {/*
+		onEnter: function(thisElement, overed){},
+		onLeave: function(thisElement, overed){},
+		onDrop: function(thisElement, overed, event){},*/
+		droppables: [],
+		container: false,
+		precalculate: false,
+		includeMargins: true,
+		checkDroppables: true
+	},
+
+	initialize: function(element, options){
+		this.parent(element, options);
+		element = this.element;
+
+		this.droppables = $$(this.options.droppables);
+		this.container = document.id(this.options.container);
+
+		if (this.container && typeOf(this.container) != 'element')
+			this.container = document.id(this.container.getDocument().body);
+
+		if (this.options.style){
+			if (this.options.modifiers.x == "left" && this.options.modifiers.y == "top"){
+				var parentStyles,
+					parent = element.getOffsetParent();
+				var styles = element.getStyles('left', 'top');
+				if (parent && (styles.left == 'auto' || styles.top == 'auto')){
+					element.setPosition(element.getPosition(parent));
+				}
+			}
+
+			if (element.getStyle('position') == 'static') element.setStyle('position', 'absolute');
+		}
+
+		this.addEvent('start', this.checkDroppables, true);
+		this.overed = null;
+	},
+
+	start: function(event){
+		if (this.container) this.options.limit = this.calculateLimit();
+
+		if (this.options.precalculate){
+			this.positions = this.droppables.map(function(el){
+				return el.getCoordinates();
+			});
+		}
+
+		this.parent(event);
+	},
+
+	calculateLimit: function(){
+		var element = this.element,
+			container = this.container,
+
+			offsetParent = document.id(element.getOffsetParent()) || document.body,
+			containerCoordinates = container.getCoordinates(offsetParent),
+			elementMargin = {},
+			elementBorder = {},
+			containerMargin = {},
+			containerBorder = {},
+			offsetParentPadding = {};
+
+		['top', 'right', 'bottom', 'left'].each(function(pad){
+			elementMargin[pad] = element.getStyle('margin-' + pad).toInt();
+			elementBorder[pad] = element.getStyle('border-' + pad).toInt();
+			containerMargin[pad] = container.getStyle('margin-' + pad).toInt();
+			containerBorder[pad] = container.getStyle('border-' + pad).toInt();
+			offsetParentPadding[pad] = offsetParent.getStyle('padding-' + pad).toInt();
+		}, this);
+
+		var width = element.offsetWidth + elementMargin.left + elementMargin.right,
+			height = element.offsetHeight + elementMargin.top + elementMargin.bottom,
+			left = 0,
+			top = 0,
+			right = containerCoordinates.right - containerBorder.right - width,
+			bottom = containerCoordinates.bottom - containerBorder.bottom - height;
+
+		if (this.options.includeMargins){
+			left += elementMargin.left;
+			top += elementMargin.top;
+		} else {
+			right += elementMargin.right;
+			bottom += elementMargin.bottom;
+		}
+
+		if (element.getStyle('position') == 'relative'){
+			var coords = element.getCoordinates(offsetParent);
+			coords.left -= element.getStyle('left').toInt();
+			coords.top -= element.getStyle('top').toInt();
+
+			left -= coords.left;
+			top -= coords.top;
+			if (container.getStyle('position') != 'relative'){
+				left += containerBorder.left;
+				top += containerBorder.top;
+			}
+			right += elementMargin.left - coords.left;
+			bottom += elementMargin.top - coords.top;
+
+			if (container != offsetParent){
+				left += containerMargin.left + offsetParentPadding.left;
+				top += ((Browser.ie6 || Browser.ie7) ? 0 : containerMargin.top) + offsetParentPadding.top;
+			}
+		} else {
+			left -= elementMargin.left;
+			top -= elementMargin.top;
+			if (container != offsetParent){
+				left += containerCoordinates.left + containerBorder.left;
+				top += containerCoordinates.top + containerBorder.top;
+			}
+		}
+
+		return {
+			x: [left, right],
+			y: [top, bottom]
+		};
+	},
+
+	getDroppableCoordinates: function(element){
+		var position = element.getCoordinates();
+		if (element.getStyle('position') == 'fixed'){
+			var scroll = window.getScroll();
+			position.left += scroll.x;
+			position.right += scroll.x;
+			position.top += scroll.y;
+			position.bottom += scroll.y;
+		}
+		return position;
+	},
+
+	checkDroppables: function(){
+		var overed = this.droppables.filter(function(el, i){
+			el = this.positions ? this.positions[i] : this.getDroppableCoordinates(el);
+			var now = this.mouse.now;
+			return (now.x > el.left && now.x < el.right && now.y < el.bottom && now.y > el.top);
+		}, this).getLast();
+
+		if (this.overed != overed){
+			if (this.overed) this.fireEvent('leave', [this.element, this.overed]);
+			if (overed) this.fireEvent('enter', [this.element, overed]);
+			this.overed = overed;
+		}
+	},
+
+	drag: function(event){
+		this.parent(event);
+		if (this.options.checkDroppables && this.droppables.length) this.checkDroppables();
+	},
+
+	stop: function(event){
+		this.checkDroppables();
+		this.fireEvent('drop', [this.element, this.overed, event]);
+		this.overed = null;
+		return this.parent(event);
+	}
+
+});
+
+Element.implement({
+
+	makeDraggable: function(options){
+		var drag = new Drag.Move(this, options);
+		this.store('dragger', drag);
+		return drag;
+	}
+
+});
+
+
+/*
+---
+
 script: Slider.js
 
 name: Slider
@@ -5822,6 +7397,241 @@ var Slider = new Class({
 
 	toPosition: function(step){
 		return (this.full * Math.abs(this.min - step)) / (this.steps * this.stepSize) - this.options.offset;
+	}
+
+});
+
+
+/*
+---
+
+script: Sortables.js
+
+name: Sortables
+
+description: Class for creating a drag and drop sorting interface for lists of items.
+
+license: MIT-style license
+
+authors:
+  - Tom Occhino
+
+requires:
+  - Core/Fx.Morph
+  - /Drag.Move
+
+provides: [Sortables]
+
+...
+*/
+
+var Sortables = new Class({
+
+	Implements: [Events, Options],
+
+	options: {/*
+		onSort: function(element, clone){},
+		onStart: function(element, clone){},
+		onComplete: function(element){},*/
+		opacity: 1,
+		clone: false,
+		revert: false,
+		handle: false,
+		dragOptions: {}/*<1.2compat>*/,
+		snap: 4,
+		constrain: false,
+		preventDefault: false
+		/*</1.2compat>*/
+	},
+
+	initialize: function(lists, options){
+		this.setOptions(options);
+
+		this.elements = [];
+		this.lists = [];
+		this.idle = true;
+
+		this.addLists($$(document.id(lists) || lists));
+
+		if (!this.options.clone) this.options.revert = false;
+		if (this.options.revert) this.effect = new Fx.Morph(null, Object.merge({
+			duration: 250,
+			link: 'cancel'
+		}, this.options.revert));
+	},
+
+	attach: function(){
+		this.addLists(this.lists);
+		return this;
+	},
+
+	detach: function(){
+		this.lists = this.removeLists(this.lists);
+		return this;
+	},
+
+	addItems: function(){
+		Array.flatten(arguments).each(function(element){
+			this.elements.push(element);
+			var start = element.retrieve('sortables:start', function(event){
+				this.start.call(this, event, element);
+			}.bind(this));
+			(this.options.handle ? element.getElement(this.options.handle) || element : element).addEvent('mousedown', start);
+		}, this);
+		return this;
+	},
+
+	addLists: function(){
+		Array.flatten(arguments).each(function(list){
+			this.lists.include(list);
+			this.addItems(list.getChildren());
+		}, this);
+		return this;
+	},
+
+	removeItems: function(){
+		return $$(Array.flatten(arguments).map(function(element){
+			this.elements.erase(element);
+			var start = element.retrieve('sortables:start');
+			(this.options.handle ? element.getElement(this.options.handle) || element : element).removeEvent('mousedown', start);
+
+			return element;
+		}, this));
+	},
+
+	removeLists: function(){
+		return $$(Array.flatten(arguments).map(function(list){
+			this.lists.erase(list);
+			this.removeItems(list.getChildren());
+
+			return list;
+		}, this));
+	},
+
+	getClone: function(event, element){
+		if (!this.options.clone) return new Element(element.tagName).inject(document.body);
+		if (typeOf(this.options.clone) == 'function') return this.options.clone.call(this, event, element, this.list);
+		var clone = element.clone(true).setStyles({
+			margin: 0,
+			position: 'absolute',
+			visibility: 'hidden',
+			width: element.getStyle('width')
+		}).addEvent('mousedown', function(event){
+			element.fireEvent('mousedown', event);
+		});
+		//prevent the duplicated radio inputs from unchecking the real one
+		if (clone.get('html').test('radio')){
+			clone.getElements('input[type=radio]').each(function(input, i){
+				input.set('name', 'clone_' + i);
+				if (input.get('checked')) element.getElements('input[type=radio]')[i].set('checked', true);
+			});
+		}
+
+		return clone.inject(this.list).setPosition(element.getPosition(element.getOffsetParent()));
+	},
+
+	getDroppables: function(){
+		var droppables = this.list.getChildren().erase(this.clone).erase(this.element);
+		if (!this.options.constrain) droppables.append(this.lists).erase(this.list);
+		return droppables;
+	},
+
+	insert: function(dragging, element){
+		var where = 'inside';
+		if (this.lists.contains(element)){
+			this.list = element;
+			this.drag.droppables = this.getDroppables();
+		} else {
+			where = this.element.getAllPrevious().contains(element) ? 'before' : 'after';
+		}
+		this.element.inject(element, where);
+		this.fireEvent('sort', [this.element, this.clone]);
+	},
+
+	start: function(event, element){
+		if (
+			!this.idle ||
+			event.rightClick ||
+			['button', 'input', 'a'].contains(event.target.get('tag'))
+		) return;
+
+		this.idle = false;
+		this.element = element;
+		this.opacity = element.get('opacity');
+		this.list = element.getParent();
+		this.clone = this.getClone(event, element);
+
+		this.drag = new Drag.Move(this.clone, Object.merge({
+			/*<1.2compat>*/
+			preventDefault: this.options.preventDefault,
+			snap: this.options.snap,
+			container: this.options.constrain && this.element.getParent(),
+			/*</1.2compat>*/
+			droppables: this.getDroppables()
+		}, this.options.dragOptions)).addEvents({
+			onSnap: function(){
+				event.stop();
+				this.clone.setStyle('visibility', 'visible');
+				this.element.set('opacity', this.options.opacity || 0);
+				this.fireEvent('start', [this.element, this.clone]);
+			}.bind(this),
+			onEnter: this.insert.bind(this),
+			onCancel: this.end.bind(this),
+			onComplete: this.end.bind(this)
+		});
+
+		this.clone.inject(this.element, 'before');
+		this.drag.start(event);
+	},
+
+	end: function(){
+		this.drag.detach();
+		this.element.set('opacity', this.opacity);
+		if (this.effect){
+			var dim = this.element.getStyles('width', 'height'),
+				clone = this.clone,
+				pos = clone.computePosition(this.element.getPosition(this.clone.getOffsetParent()));
+
+			var destroy = function(){
+				this.removeEvent('cancel', destroy);
+				clone.destroy();
+			};
+
+			this.effect.element = clone;
+			this.effect.start({
+				top: pos.top,
+				left: pos.left,
+				width: dim.width,
+				height: dim.height,
+				opacity: 0.25
+			}).addEvent('cancel', destroy).chain(destroy);
+		} else {
+			this.clone.destroy();
+		}
+		this.reset();
+	},
+
+	reset: function(){
+		this.idle = true;
+		this.fireEvent('complete', this.element);
+	},
+
+	serialize: function(){
+		var params = Array.link(arguments, {
+			modifier: Type.isFunction,
+			index: function(obj){
+				return obj != null;
+			}
+		});
+		var serial = this.lists.map(function(list){
+			return list.getChildren().map(params.modifier || function(element){
+				return element.get('id');
+			}, this);
+		}, this);
+
+		var index = params.index;
+		if (this.lists.length == 1) index = 0;
+		return (index || index === 0) && index >= 0 && index < this.lists.length ? serial[index] : serial;
 	}
 
 });
@@ -6122,6 +7932,69 @@ String.implement({
 
 }).call(this);
 
+
+
+/*
+---
+
+script: Hash.Cookie.js
+
+name: Hash.Cookie
+
+description: Class for creating, reading, and deleting Cookies in JSON format.
+
+license: MIT-style license
+
+authors:
+  - Valerio Proietti
+  - Aaron Newton
+
+requires:
+  - Core/Cookie
+  - Core/JSON
+  - /MooTools.More
+  - /Hash
+
+provides: [Hash.Cookie]
+
+...
+*/
+
+Hash.Cookie = new Class({
+
+	Extends: Cookie,
+
+	options: {
+		autoSave: true
+	},
+
+	initialize: function(name, options){
+		this.parent(name, options);
+		this.load();
+	},
+
+	save: function(){
+		var value = JSON.encode(this.hash);
+		if (!value || value.length > 4096) return false; //cookie would be truncated!
+		if (value == '{}') this.dispose();
+		else this.write(value);
+		return true;
+	},
+
+	load: function(){
+		this.hash = new Hash(JSON.decode(this.read(), true));
+		return this;
+	}
+
+});
+
+Hash.each(Hash.prototype, function(method, name){
+	if (typeof method == 'function') Hash.Cookie.implement(name, function(){
+		var value = method.apply(this.hash, arguments);
+		if (this.options.autoSave) this.save();
+		return value;
+	});
+});
 
 
 /*
@@ -6663,90 +8536,6 @@ HtmlTable.defineParsers = function(parsers){
 		HtmlTable.ParserPriority.unshift(parser);
 	}
 };
-
-
-/*
----
-
-name: Element.Event.Pseudos.Keys
-
-description: Adds functionality fire events if certain keycombinations are pressed
-
-license: MIT-style license
-
-authors:
-  - Arian Stolwijk
-
-requires: [Element.Event.Pseudos]
-
-provides: [Element.Event.Pseudos.Keys]
-
-...
-*/
-
-(function(){
-
-var keysStoreKey = '$moo:keys-pressed',
-	keysKeyupStoreKey = '$moo:keys-keyup';
-
-
-Event.definePseudo('keys', function(split, fn, args){
-
-	var event = args[0],
-		keys = [],
-		pressed = this.retrieve(keysStoreKey, []);
-
-	keys.append(split.value.replace('++', function(){
-		keys.push('+'); // shift++ and shift+++a
-		return '';
-	}).split('+'));
-
-	pressed.include(event.key);
-
-	if (keys.every(function(key){
-		return pressed.contains(key);
-	})) fn.apply(this, args);
-
-	this.store(keysStoreKey, pressed);
-
-	if (!this.retrieve(keysKeyupStoreKey)){
-		var keyup = function(event){
-			(function(){
-				pressed = this.retrieve(keysStoreKey, []).erase(event.key);
-				this.store(keysStoreKey, pressed);
-			}).delay(0, this); // Fix for IE
-		};
-		this.store(keysKeyupStoreKey, keyup).addEvent('keyup', keyup);
-	}
-
-});
-
-Object.append(Event.Keys, {
-	'shift': 16,
-	'control': 17,
-	'alt': 18,
-	'capslock': 20,
-	'pageup': 33,
-	'pagedown': 34,
-	'end': 35,
-	'home': 36,
-	'numlock': 144,
-	'scrolllock': 145,
-	';': 186,
-	'=': 187,
-	',': 188,
-	'-': Browser.firefox ? 109 : 189,
-	'.': 190,
-	'/': 191,
-	'`': 192,
-	'[': 219,
-	'\\': 220,
-	']': 221,
-	"'": 222,
-	'+': 107
-});
-
-}).call(this);
 
 
 /*
@@ -7410,6 +9199,112 @@ HtmlTable = Class.refactor(HtmlTable, {
 
 	_mouseleave: function(){
 		if (this._hovered) this._leaveRow(this._hovered);
+	}
+
+});
+
+
+/*
+---
+
+script: Scroller.js
+
+name: Scroller
+
+description: Class which scrolls the contents of any Element (including the window) when the mouse reaches the Element's boundaries.
+
+license: MIT-style license
+
+authors:
+  - Valerio Proietti
+
+requires:
+  - Core/Events
+  - Core/Options
+  - Core/Element.Event
+  - Core/Element.Dimensions
+  - MooTools.More
+
+provides: [Scroller]
+
+...
+*/
+
+var Scroller = new Class({
+
+	Implements: [Events, Options],
+
+	options: {
+		area: 20,
+		velocity: 1,
+		onChange: function(x, y){
+			this.element.scrollTo(x, y);
+		},
+		fps: 50
+	},
+
+	initialize: function(element, options){
+		this.setOptions(options);
+		this.element = document.id(element);
+		this.docBody = document.id(this.element.getDocument().body);
+		this.listener = (typeOf(this.element) != 'element') ? this.docBody : this.element;
+		this.timer = null;
+		this.bound = {
+			attach: this.attach.bind(this),
+			detach: this.detach.bind(this),
+			getCoords: this.getCoords.bind(this)
+		};
+	},
+
+	start: function(){
+		this.listener.addEvents({
+			mouseover: this.bound.attach,
+			mouseleave: this.bound.detach
+		});
+		return this;
+	},
+
+	stop: function(){
+		this.listener.removeEvents({
+			mouseover: this.bound.attach,
+			mouseleave: this.bound.detach
+		});
+		this.detach();
+		this.timer = clearInterval(this.timer);
+		return this;
+	},
+
+	attach: function(){
+		this.listener.addEvent('mousemove', this.bound.getCoords);
+	},
+
+	detach: function(){
+		this.listener.removeEvent('mousemove', this.bound.getCoords);
+		this.timer = clearInterval(this.timer);
+	},
+
+	getCoords: function(event){
+		this.page = (this.listener.get('tag') == 'body') ? event.client : event.page;
+		if (!this.timer) this.timer = this.scroll.periodical(Math.round(1000 / this.options.fps), this);
+	},
+
+	scroll: function(){
+		var size = this.element.getSize(),
+			scroll = this.element.getScroll(),
+			pos = this.element != this.docBody ? this.element.getOffsets() : {x: 0, y:0},
+			scrollSize = this.element.getScrollSize(),
+			change = {x: 0, y: 0},
+			top = this.options.area.top || this.options.area,
+			bottom = this.options.area.bottom || this.options.area;
+		for (var z in this.page){
+			if (this.page[z] < (top + pos[z]) && scroll[z] != 0){
+				change[z] = (this.page[z] - top - pos[z]) * this.options.velocity;
+			} else if (this.page[z] + bottom > (size[z] + pos[z]) && scroll[z] + size[z] != scrollSize[z]){
+				change[z] = (this.page[z] - size[z] + bottom - pos[z]) * this.options.velocity;
+			}
+			change[z] = change[z].round();
+		}
+		if (change.y || change.x) this.fireEvent('change', [scroll.x + change.x, scroll.y + change.y]);
 	}
 
 });
