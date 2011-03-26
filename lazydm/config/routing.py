@@ -43,6 +43,8 @@ def make_map(config):
     map.connect('/admin/add_new/article/', controller='admin', action='index')
     map.connect('/admin/add/{type}/', controller='admin', action='add_new')
     
+    map.connect('/tools/random/', controller='resources', action='getrandom', conditions=dict(method=['GET']))
+    
     #map.connect('/admin/{action}/', controller='admin')
 
     return map

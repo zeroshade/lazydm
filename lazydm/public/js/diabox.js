@@ -890,7 +890,12 @@ provides: [Diabox, Diabox.Gallery, Diabox.Renderable]
     Extends : Diabox.Renderable,
     render : function(){
       if(!this.retrieved()){
-        var e = $(this.target.substring(this.target.indexOf('#') + 1)).clone(true, false);
+        var e = $(this.target.substring(this.target.indexOf('#') + 1)).clone(true, true);
+        e.getChildren().each(function(elem) {
+            var id = elem.get('id');
+            if (id != null) { elem.set('id', id + '_box'); }
+            elem.getChildren().each(arguments.callee);
+        });
         if(e.getStyle('display') == 'none') e.setStyle('display', '');
         this.set_content(e);
       }

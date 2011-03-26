@@ -16,8 +16,33 @@
     {{ super() }}
     {{ h.javascript_link('/js/rotater.js') }}
     {{ h.javascript_link('/js/tabs.js') }}
-
+    {{ h.javascript_link('/js/Class.Mutators.Memoize.js') }}
     {{ h.javascript_link('/js/diabox.js') }}
+    {{ h.javascript_link('/js/dice.js') }}
+{% endblock %}
+{% block jsadd %}
+    var getrand = new Request.JSON({ url: '/tools/random/', 
+        onFailure: function() {
+            alert("ERROR");
+        }
+    });
+
+    function setRandomCallback(fn) { getrand.removeEvents().addEvent('success', fn); }
+    function getRandomNumbers(sides, num) { getrand.get({'sides' : sides, 'num' : num }); }
+    
+    Diabox.DiceBoxRenderable = new Class({
+        Extends: Diabox.InlineRenderable,
+        after_render: function() {
+            this.parent();
+            $$('li.dieholder.full').addEvent('mousedown', dragdice);
+        }
+    });
+
+    function custom_parse(target) {
+        if (target.test(/#inline2/))
+            return "dicebox"; 
+        return null;
+    }
 {% endblock %}
 {% block domready %}
         var tabs = new MGFX.Tabs('.tab','.tab-con', {
@@ -25,7 +50,11 @@
             hover: true,
             transitionDuration: 200
         });
-        window.diabox = new Diabox();
+        window.diabox = new Diabox({
+            parser: custom_parse,
+            overlay: { click_to_close: false }
+        });
+        window.diabox.register_renderable('dicebox', Diabox.DiceBoxRenderable);
 {% endblock %}
 {% block maincontent %}
     <article>

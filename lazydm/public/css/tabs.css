@@ -6,7 +6,7 @@
 #tab-contents {
     background-color: #ddd;
     position: relative;
-    height: 160px; 
+    height: 500px; 
     width: 510px;
     overflow: hidden;
     -webkit-border-radius: 11px;
@@ -16,6 +16,8 @@
     -webkit-box-shadow: 0 0 5px #777;
 	-moz-box-shadow: 0 0 5px #777;
 	box-shadow: 0 0 5px #777;
+    
+    margin-bottom: 15px;
 }
 
 .tab-con {
@@ -69,6 +71,68 @@
  
  .tab-con li {
     display: block;
-    width: 80px;
+    width: 100px;
     text-align: right;
  }
+
+.tab-con li .base_stat {
+    display: inline-block;
+    width: 10px;
+}
+
+li.dieholder {
+    position: relative;
+    display: block;
+    height: 62px;
+    width: 256px;
+}
+
+.clear {
+    float: clear;
+}
+
+#attrs_box {
+    float: left;
+    position: relative;
+}
+#dicebox_box { 
+    float: right;
+    position: relative;
+}
+
+.dropdie {
+    opacity: 0.3;
+}
+
+.die_6_1, .die_6_2, .die_6_3, .die_6_4, .die_6_5, .die_6_6 {
+/*    float: left;  */
+    margin: 2px;
+    display: inline-block;
+    width: 60px;
+    height: 60px;
+    background-image: url("/img/6sided_all.png");
+    background-repeat: no-repeat;
+    background-size: 180px 120px;
+    -webkit-background-size: 180px 120px;
+    -moz-background-size: 50% 50%;
+}
+
+.die_6_2 {
+    background-position: -60px 0;
+}
+
+.die_6_3 {
+    background-position: -120px 0;
+}
+
+.die_6_4 {
+    background-position: 0 -60px;
+}
+
+.die_6_5 {
+    background-position: -60px -60px;
+}
+
+.die_6_6 {
+    background-position: -120px -60px;
+}
