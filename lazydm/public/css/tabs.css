@@ -63,21 +63,54 @@
     box-shadow: 0 0 5px #777;
 }
 
+form {
+    margin-top: 0;
+    padding-top: 0;
+    border: none;
+    margin-left: 10px;
+}
+
+form label {
+    width: 70px;
+}
+
+form input[type="text"], form input[type="email"], form input[type="url"], form input[type="password"] {
+    width: 200px;
+}
 /****************************************
  *
  * Styles for Character creation
  *
  ****************************************/
  
- .tab-con li {
-    display: block;
-    width: 100px;
-    text-align: right;
+ .tip-box { 
+    width: 170px;
+    opacity: 0.8;
+    color: white;
+    background-color: #000000;
+    
+    -webkit-border-radius: 8px;
+    -moz-border-radius: 8px;
+    border-radius: 8px;
+    padding: 8px;
  }
+ 
+ .tip-title {
+    font-size: 85%;
+    text-decoration: underline;
+ }
+ 
+ table#abilities td.stat {
+    
+ }
+ 
+.tab-con tr.attr .attr_label {
+    width: 73px;
+}
 
-.tab-con li .base_stat {
-    display: inline-block;
-    width: 10px;
+.tab-con tr.attr .stat {
+    width: 40px;
+    text-align: center;
 }
 
 li.dieholder {

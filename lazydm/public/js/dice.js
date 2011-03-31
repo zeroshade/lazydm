@@ -6,7 +6,6 @@
  * 
  * 
  */
-// (function($){
     
     function turnDiceOn(elem, title, fn) {
         elem.removeClass('empty').addClass('full').addEvent('mousedown', fn);
@@ -40,13 +39,11 @@
                     turnDiceOn(location, dragging.get('title'), dragdice);
                     var prev = location.getPrevious('.attr');
                     if (prev != null)
-                        prev.set('html', prev.get('html') + ' ' + dragging.get('title'));
+                        prev.getChildren('.stat')[0].set('html', dragging.get('title'));
                     
                     prev = dieset.getPrevious('.attr');
-                    if (prev != null) {
-                        var html = prev.get('html');
-                        prev.set('html', html.substring(0, html.indexOf(':') + 1));
-                    }
+                    if (prev != null)
+                        prev.getChildren('.stat')[0].set('html', '');
                     
                     turnDiceOff(dieset, dragdice);
                 }
@@ -68,9 +65,9 @@
         $$('li.dieholder.full').each(function (item) {
             turnDiceOff(item, dragdice);
         });
-        $$('#attrs_box li.attr').each(function (item) {
+        $$('#attrs_box li.attr .stat').each(function (item) {
             var html = item.get('html');
-            item.set('html', html.substring(0, html.indexOf(':') + 1));
+            item.set('html', '');
         });
         var idx = 0;
         $$('#dicebox_box li.dieholder').each(function (item) {
@@ -91,15 +88,3 @@
             turnDiceOn(item, sum, dragdice)
         });
     }
-
-    function transferStatValues() {
-        var stats = $$('.tab-con li.attr .base_stat');
-        var dice = $$('#attrs_box li.attr');
-        
-        stats.each( function (item, index) {
-            var html = dice[index].get('html');
-            item.set('html', html.substring(html.indexOf(':') + 2));
-        });
-    }
-
-// })(document.id || $);

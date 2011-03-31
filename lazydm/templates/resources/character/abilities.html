@@ -1,33 +1,70 @@
-        <ul>
-            <li class='attr' id='str'>Strength: <span class='base_stat'></span></li>
-            <li class='attr' id='dex'>Dexterity: <span class='base_stat'></span></li>
-            <li class='attr' id='wis'>Wisdom: <span class='base_stat'></span></li>
-            <li class='attr' id='int'>Intelligence: <span class='base_stat'></span></li>
-            <li class='attr' id='con'>Constitution: <span class='base_stat'></span></li>
-            <li class='attr' id='cha'>Charisma: <span class='base_stat'></span></li>
-        </ul>
+        <fieldset>
+            <legend>Personal Info</legend>
+            <p> 
+                <label for='name'>Name:</label>
+                <input type='text' name='name' id='name' />
+                <label for='level'>Level:</label> 
+                <select id='level' name='level'>
+                    {% for x in range(1,21) %}
+                    <option value='{{ x }}'>{{x }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>
+                <label for='player'>Player:</label>
+                <input type='text' name='name' id='name' />
+            </p>
+            <p>
+                {% for r in c.races %}{{ r }} and {{ r.stat_mods_json() }}{% endfor %}
+            </p>
+            <p>{{ c.jsonrace }}</p>
+        </fieldset>
+        
+        <h3>Ability Scores</h3>
+        <p>
+            <a href="#inline2" rel='diabox[700x535]' onClick='setRandomCallback(addToDiceBox);' title='Roll Ability Scores'>Roll Ability Scores</a>
+            <span id='bonus'></span>
+        </p>
+        <table id='abilities'>
+            <tr class='attr'>
+                <th></th><th class='stat'>Total</th><th class='stat'>Base</th>
+            </tr>
+            <tr class='attr' id='str'>
+                <td class='attr_label'>Strength:</td><td class='total stat'></td><td class='base stat'></td>
+            </tr>
+            <tr class='attr' id='dex'>
+                <td class='attr_label'>Dexterity:</td><td class='total stat'></td><td class='base stat'></td>
+            </tr>
+            <tr class='attr' id='wis'>
+                <td class='attr_label'>Wisdom:</td><td class='total stat'></td><td class='base stat'></td>
+            </tr>
+            <tr class='attr' id='int'>
+                <td class='attr_label'>Intelligence:</td><td class='total stat'></td><td class='base stat'></td>
+            </tr>
+            <tr class='attr' id='con'>
+                <td class='attr_label'>Constitution:</td><td class='total stat'></td><td class='base stat'></td>
+            </tr>
+            <tr class='attr' id='cha'>
+                <td class='attr_label'>Charisma:</td><td class='total stat'></td><td class='base stat'></td>
+            </tr>
+        </table>
         <div id='inline2' style='display: none;'>
             <button onClick="getRandomNumbers(7,24);">Get Dice</button>
-            <button onClick="transferStatValues();">Update Values</button>
-<!--
-            {% for x in range(1,7) -%}
-            <span class='die_6_{{ x }}'>&nbsp;</span>
-            {%- endfor %}
--->
+            <button onClick="window.character.transferStats('#attrs_box li.attr .stat');">Update Values</button>
             <div class='clear'></div>
             <div id='attrs'>
                 <ul>
-                    <li class='attr'>Strength:</li>
+                    <li class='attr'>Strength: <span class='stat'></span></li>
                     <li class='dieholder empty'>&nbsp;</li>
-                    <li class='attr'>Dexterity:</li>
+                    <li class='attr'>Dexterity: <span class='stat'></span></li>
                     <li class='dieholder empty'>&nbsp;</li>
-                    <li class='attr'>Wisdom:</li>
+                    <li class='attr'>Wisdom: <span class='stat'></span></li>
                     <li class='dieholder empty'>&nbsp;</li>
-                    <li class='attr'>Intelligence:</li>
+                    <li class='attr'>Intelligence: <span class='stat'></span></li>
                     <li class='dieholder empty'>&nbsp;</li>
-                    <li class='attr'>Constitution:</li>
+                    <li class='attr'>Constitution: <span class='stat'></span></li>
                     <li class='dieholder empty'>&nbsp;</li>
-                    <li class='attr'>Charisma:</li>
+                    <li class='attr'>Charisma: <span class='stat'></span></li>
                     <li class='dieholder empty'>&nbsp;</li>
                 </ul>
             </div>
@@ -46,4 +83,3 @@
             </div>
             
         </div>
-        <a href="#inline2" rel='diabox[700x535]' onClick='setRandomCallback(addToDiceBox);' title='show abilities'>Show it</a>
