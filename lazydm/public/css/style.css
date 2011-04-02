@@ -470,7 +470,7 @@ p.error {
 }
 
 input:not(:focus), textarea:not(:focus) {
-	opacity: 0.5;
+	opacity: 0.75;
 }
 
 input:focus, textarea:focus {

@@ -1,54 +1,83 @@
         <fieldset>
             <legend>Personal Info</legend>
             <p> 
-                <label for='name'>Name:</label>
+                <label class='tips' rel='Give your character a name' for='name'>Name:</label>
                 <input type='text' name='name' id='name' />
-                <label for='level'>Level:</label> 
+                <a style='margin-left: 25px;' href='#classes' rel='diabox[700x535]' onClick=''>Choose Classes</a>
+<!--
+                <label class='tips' rel='Choose your starting level' for='level'>Level:</label> 
                 <select id='level' name='level'>
                     {% for x in range(1,21) %}
                     <option value='{{ x }}'>{{x }}</option>
                     {% endfor %}
                 </select>
+-->
             </p>
             <p>
-                <label for='player'>Player:</label>
+                <label class='tips' rel='The name of the player for this character' for='player'>Player:</label>
                 <input type='text' name='name' id='name' />
+                <label class='tips' for='race' rel='Choose a race'>Race:</label>
+                <select name='race' id='race'>
+                {% for book,list in c.races|groupby('book') %}
+                    <optgroup label='{{ book|escape }}'>
+                    {% for r in list %}
+                        <option value='{{r.id}}'>{{ r }}</option>
+                    {% endfor %}
+                    </optgroup>
+                {% endfor %}
+                </select>
             </p>
+            <p>
+                <label class='tips' rel='Enter your own height or view races to roll for it' for='height'>Height:</label>
+                <input class='short' maxlength='5' type='text' id='height' name='height' />
+                <label class='tips' rel='Enter your own weight or view races to roll for it' for='weight'>Weight:</label>
+                <input class='short' maxlength='5' type='text' id='height' name='height' />
+                <a style='margin-left: 15px;' href='#showraces' rel='diabox[700x535]' onClick='' title='Choose Race and appropriate height and weight'>View Races</a>
+            </p>
+            <p>
+                <label class='tips' title='Effective Character Level' rel='Combined level adjustment and class levels' for='ecl'>ECL:</label>
+                <input class='short' type='text' readonly='readonly' id='ecl' name='ecl' />
+                <label class='tips' rel='Classes filled in via &quot;Choose Classes&quot;' for='classes'>Classes:</label>
+                <input type='text' readonly='readonly' id='classes' name='classes' />
+            </p>
+<!--
             <p>
                 {% for r in c.races %}{{ r }} and {{ r.stat_mods_json() }}{% endfor %}
             </p>
             <p>{{ c.jsonrace }}</p>
+-->
         </fieldset>
-        
-        <h3>Ability Scores</h3>
-        <p>
-            <a href="#inline2" rel='diabox[700x535]' onClick='setRandomCallback(addToDiceBox);' title='Roll Ability Scores'>Roll Ability Scores</a>
-            <span id='bonus'></span>
-        </p>
-        <table id='abilities'>
-            <tr class='attr'>
-                <th></th><th class='stat'>Total</th><th class='stat'>Base</th>
-            </tr>
-            <tr class='attr' id='str'>
-                <td class='attr_label'>Strength:</td><td class='total stat'></td><td class='base stat'></td>
-            </tr>
-            <tr class='attr' id='dex'>
-                <td class='attr_label'>Dexterity:</td><td class='total stat'></td><td class='base stat'></td>
-            </tr>
-            <tr class='attr' id='wis'>
-                <td class='attr_label'>Wisdom:</td><td class='total stat'></td><td class='base stat'></td>
-            </tr>
-            <tr class='attr' id='int'>
-                <td class='attr_label'>Intelligence:</td><td class='total stat'></td><td class='base stat'></td>
-            </tr>
-            <tr class='attr' id='con'>
-                <td class='attr_label'>Constitution:</td><td class='total stat'></td><td class='base stat'></td>
-            </tr>
-            <tr class='attr' id='cha'>
-                <td class='attr_label'>Charisma:</td><td class='total stat'></td><td class='base stat'></td>
-            </tr>
-        </table>
-        <div id='inline2' style='display: none;'>
+        <fieldset>
+            <legend>Ability Scores</legend>
+            <p>
+                <a href="#diceroll" rel='diabox[700x535]' onClick='setRandomCallback(addToDiceBox);' title='Roll Ability Scores'>Roll Ability Scores</a>
+                <span id='bonus'></span>
+            </p>
+            <table id='abilities'>
+                <tr class='attr'>
+                    <th></th><th class='stat'>Total</th><th class='stat'>Base</th><th class='stat'>Race</th><th class='stat'>Level</th>
+                </tr>
+                <tr class='attr' id='str'>
+                    <td class='attr_label'>Strength:</td><td class='total stat'></td><td class='base stat'></td>
+                </tr>
+                <tr class='attr' id='dex'>
+                    <td class='attr_label'>Dexterity:</td><td class='total stat'></td><td class='base stat'></td>
+                </tr>
+                <tr class='attr' id='wis'>
+                    <td class='attr_label'>Wisdom:</td><td class='total stat'></td><td class='base stat'></td>
+                </tr>
+                <tr class='attr' id='int'>
+                    <td class='attr_label'>Intelligence:</td><td class='total stat'></td><td class='base stat'></td>
+                </tr>
+                <tr class='attr' id='con'>
+                    <td class='attr_label'>Constitution:</td><td class='total stat'></td><td class='base stat'></td>
+                </tr>
+                <tr class='attr' id='cha'>
+                    <td class='attr_label'>Charisma:</td><td class='total stat'></td><td class='base stat'></td>
+                </tr>
+            </table>
+        </fieldset>
+        <div id='diceroll' style='display: none;'>
             <button onClick="getRandomNumbers(7,24);">Get Dice</button>
             <button onClick="window.character.transferStats('#attrs_box li.attr .stat');">Update Values</button>
             <div class='clear'></div>
@@ -72,14 +101,11 @@
                 <ul>
                     {% for i in range(1,7) %}
                     <li class='dieholder empty'>
-<!--
-                        {% for x in range(1,4) -%}
-                        <span class='die_6_{{ x }}'>&nbsp;</span>
-                        {%- endfor %}
--->
                     </li>
                     {% endfor %}
                 </ul>
             </div>
-            
+        </div>
+        <div id='showraces' style='display: none;'>
+            <p>Show teh races!!</p>
         </div>

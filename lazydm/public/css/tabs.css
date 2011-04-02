@@ -6,7 +6,7 @@
 #tab-contents {
     background-color: #ddd;
     position: relative;
-    height: 500px; 
+    height: 600px; 
     width: 510px;
     overflow: hidden;
     -webkit-border-radius: 11px;
@@ -63,6 +63,10 @@
     box-shadow: 0 0 5px #777;
 }
 
+.hidden {
+    display: none;
+}
+
 form {
     margin-top: 0;
     padding-top: 0;
@@ -77,6 +81,16 @@ form label {
 form input[type="text"], form input[type="email"], form input[type="url"], form input[type="password"] {
     width: 200px;
 }
+
+form input[type="text"].short, form input[type="email"].short, form input[type="url"].short, form input[type="password"].short { 
+    width: 45px;
+}
+
+form input[type="text"][readonly="readonly"] {
+    border: none;
+    background: none;
+}
+
 /****************************************
  *
  * Styles for Character creation
@@ -100,12 +114,19 @@ form input[type="text"], form input[type="email"], form input[type="url"], form 
     text-decoration: underline;
  }
  
- table#abilities td.stat {
-    
+ table#abilities {
+    margin-left: 10px;
+    margin-bottom: 5px;
+    padding: 5px;
+ }
+ 
+ #attrs_box .attr {
+    font-weight: bold;
  }
  
 .tab-con tr.attr .attr_label {
     width: 73px;
+    font-weight: bold;
 }
 
 .tab-con tr.attr .stat {

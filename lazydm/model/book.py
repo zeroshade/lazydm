@@ -10,6 +10,9 @@ class Book(Base):
     id = Column(Integer, primary_key=True)
     title = Column(Unicode(100),nullable=False,unique=True,index=True)
 
+    def __str__(self):
+        return self.title
+
 class BookData(object):
     @declared_attr
     def book_id(cls):
