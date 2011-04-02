@@ -4,3 +4,6 @@ Jinja2
 MySQL-python
 pytz
 pygments
+repoze.what-pylons
+repoze.what-quickstart
+randomdotorg

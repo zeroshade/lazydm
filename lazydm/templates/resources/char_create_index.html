@@ -19,6 +19,7 @@
     {{ h.javascript_link('/js/Class.Mutators.Memoize.js') }}
     {{ h.javascript_link('/js/diabox.js') }}
     {{ h.javascript_link('/js/dice.js') }}
+    {{ h.javascript_link('/js/character.js') }}
 {% endblock %}
 {% block jsadd %}
     var getrand = new Request.JSON({ url: '/tools/random/', 
@@ -55,6 +56,11 @@
             overlay: { click_to_close: false }
         });
         window.diabox.register_renderable('dicebox', Diabox.DiceBoxRenderable);
+        window.character = new Character();
+        
+        window.tips = new Tips('.tips', 
+            { className: 'tip-box' }
+        );
 {% endblock %}
 {% block maincontent %}
     <article>
@@ -63,21 +69,23 @@
         </header>
         
         <ul id='tabs'>
-            <li><a class='tab' id='one' href='#'>Abilities</a></li>
-            <li><a class='tab' id='two' href='#'>Description</a></li>
-            <li><a class='tab' id='three' href='#'>Feats</a></li>
+            <li><a class='tab tips' title='Description' rel='Determine the basics of your character. Race, height, weight, etc.' id='one' href='#'>Description</a></li>
+            <li><a class='tab tips' title='Tab Choice' rel='Weight Height' id='two' href='#'>Description</a></li>
+            <li><a class='tab tips' title='Tab Choice' rel='Feats' id='three' href='#'>Feats</a></li>
         </ul>
-        
-        <div id='tab-contents'>
-            <div class='tab-con'>
-                {% include '/resources/character/abilities.html' %}
+
+        <form>
+            <div id='tab-contents'>
+                <div class='tab-con'>
+                    {% include '/resources/character/abilities.html' %}
+                </div>
+                <div class='tab-con'>
+                    <p>Two Daisies</p>
+                </div>
+                <div class='tab-con'>
+                    <p>Fuck you</p>
+                </div>
             </div>
-            <div class='tab-con'>
-                <p>Two Daisies</p>
-            </div>
-            <div class='tab-con'>
-                <p>Fuck you</p>
-            </div>
-        </div>
+        </form>
     </article>
 {% endblock %}

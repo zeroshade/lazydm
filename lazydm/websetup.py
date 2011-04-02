@@ -8,6 +8,8 @@ from lazydm.model.meta import Session, Base
 from lazydm.model.article import Article
 from lazydm.model.comment import Comment
 from lazydm.model.repoze import User, Group, Permission
+from lazydm.model.book import Book
+from lazydm.model.race import Race
 
 log = logging.getLogger(__name__)
 
@@ -61,4 +63,17 @@ def setup_app(command, conf, vars):
     Session.add(Comment(user=u'Benjamin Franklin', email=u'zotthewizard@gmail.com', content=content, article_id=1,type='article',ip_addr='192.168.1.1'))
     Session.add(Comment(user=u'George Washington', email=u'wtf@gmail.com', content=content, article_id=1,type='article',ip_addr='192.168.1.1'))
     Session.commit()
+    
+    b = Book(title="Player's Handbook")
+    Session.add(b)
+    Session.commit()
+    
+    r = Race()
+    r.name = 'Elf'
+    r._dex = 2
+    r._con = -2
+    r.book = b
+    Session.add(r)
+    Session.commit()
+    
     log.info("Success!!")
