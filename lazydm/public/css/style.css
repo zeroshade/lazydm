@@ -164,7 +164,7 @@ nav ul li.subscribe a {
 
 aside {
 	display: table-cell;
-	width: 300px;
+	width: 290px;
 	background: -webkit-gradient(linear, left top, right top, from(#E3E3E3), to(#F0F0F0));
 	background: -moz-linear-gradient(left, #E3E3E3, #F0F0F0);
 	border-left: 1px solid #D7D7D7;
