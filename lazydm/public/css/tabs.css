@@ -68,26 +68,27 @@
     display: none;
 }
 
-form {
+form#tab-form {
     margin-top: 0;
     padding-top: 0;
     border: none;
-    margin-left: 10px;
+    margin-left: 15px;
 }
 
-form label {
+form #tab-contents label {
     width: 70px;
+    padding-right: 7px;
 }
 
-form input[type="text"], form input[type="email"], form input[type="url"], form input[type="password"] {
+form #tab-contents input[type="text"], form #tab-contents input[type="email"], form #tab-contents input[type="url"], form #tab-contents input[type="password"] {
     width: 200px;
 }
 
-form input[type="text"].short, form input[type="email"].short, form input[type="url"].short, form input[type="password"].short { 
-    width: 45px;
+form #tab-contents input[type="text"].short, form #tab-contents input[type="email"].short, form #tab-contents input[type="url"].short, form #tab-contents input[type="password"].short { 
+    width: 35px;
 }
 
-form input[type="text"][readonly="readonly"] {
+form #tab-contents input[type="text"][readonly="readonly"] {
     border: none;
     background: none;
 }
@@ -146,6 +147,10 @@ li.dieholder {
     float: clear;
 }
 
+.total.stat {
+    color: red;
+}
+
 #attrs_box {
     float: left;
     position: relative;
@@ -190,4 +195,9 @@ li.dieholder {
 
 .die_6_6 {
     background-position: -110px -55px;
+}
+
+#showraces select:not([size='1']) {
+    width: 200px;
+    margin-left: 10px;
 }

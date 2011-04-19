@@ -73,6 +73,15 @@ def setup_app(command, conf, vars):
     r._dex = 2
     r._con = -2
     r.book = b
+    r.male_ft = 4
+    r.female_ft = 4
+    r.male_in = 5
+    r.female_in = 5
+    r.male_lb = 85
+    r.female_lb = 80
+    r.height_mod = "2d6"
+    r.weight_mod = "1d6"
+    
     Session.add(r)
     Session.commit()
     

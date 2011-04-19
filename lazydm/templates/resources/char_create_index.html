@@ -56,7 +56,9 @@
             overlay: { click_to_close: false }
         });
         window.diabox.register_renderable('dicebox', Diabox.DiceBoxRenderable);
-        window.character = new Character();
+        window.character = new Character({
+                races : {{ c.jsonrace }}
+            });
         
         window.tips = new Tips('.tips', 
             { className: 'tip-box' }
@@ -74,7 +76,7 @@
             <li><a class='tab tips' title='Tab Choice' rel='Feats' id='three' href='#'>Feats</a></li>
         </ul>
 
-        <form>
+        <form id='tab-form'>
             <div id='tab-contents'>
                 <div class='tab-con'>
                     {% include '/resources/character/abilities.html' %}

@@ -2,6 +2,7 @@ import logging
 
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
+from sqlalchemy.sql.expression import desc
 
 from lazydm.lib.base import BaseController, render
 from randomdotorg import RandomDotOrg as RDO
@@ -14,7 +15,15 @@ log = logging.getLogger(__name__)
 class raceEncode(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Race):
-            return {'name' : obj.name, 'stat_mods' : obj.stats(), 'book' : obj.book.title }
+            return { 
+                    'name' : obj.name, 
+                    'stat_mods' : obj.stats(), 
+                    'book' : { 
+                                'title' : obj.book.title,
+                                'id' : obj.book.id
+                             },
+                    'personal' : obj.personal()
+                    }
         else:
             return json.JSONEncoder.default(self,obj)
 
@@ -29,6 +38,9 @@ class ResourcesController(BaseController):
         return json.dumps(r.randrange(1,sides,1,num))
 
     def index(self):
-        c.races = Session.query(Race).all()
-        c.jsonrace = json.dumps(c.races, cls=raceEncode)
+        c.races = Session.query(Race).order_by(desc(Race.id)).all()
+        tmp = {}
+        for r in c.races:
+            tmp[r.id] = r
+        c.jsonrace = json.dumps(tmp, cls=raceEncode)
         return render('/resources/char_create_index.html');

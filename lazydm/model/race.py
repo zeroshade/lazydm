@@ -15,6 +15,14 @@ class Race(Base, BookData):
     _wis = Column(Integer, default=0)
     _con = Column(Integer, default=0)
     _cha = Column(Integer, default=0)
+    male_ft = Column(Integer, nullable=False)
+    female_ft = Column(Integer, nullable=False)
+    male_in = Column(Integer, nullable=False)
+    female_in = Column(Integer, nullable=False)
+    male_lb = Column(Integer, nullable=False)
+    female_lb = Column(Integer, nullable=False)
+    height_mod = Column(Unicode(5), nullable=False)
+    weight_mod = Column(Unicode(5), nullable=False)
     
     def stats(self):
         return { 
@@ -25,7 +33,17 @@ class Race(Base, BookData):
                     'con' : self._con,
                     'cha' : self._cha
                 }
-        
+    
+    def personal(self):
+        return {
+                    'height' : { 'ft' : { 'male' : self.male_ft, 'female' : self.female_ft },
+                                 'in' : { 'male' : self.male_in, 'female' : self.female_in }
+                               },
+                    'weight' : { 'male' : self.male_lb, 'female' : self.female_lb },
+                    'height_mod' : self.height_mod,
+                    'weight_mod' : self.weight_mod
+                }
+    
     def stat_mods_json(self):
         return json.dumps(self.stats())
 

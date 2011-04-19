@@ -3,7 +3,7 @@
             <p> 
                 <label class='tips' rel='Give your character a name' for='name'>Name:</label>
                 <input type='text' name='name' id='name' />
-                <a style='margin-left: 25px;' href='#classes' rel='diabox[700x535]' onClick=''>Choose Classes</a>
+                <a style='margin-left: 25px;' href='#showraces' rel='diabox[700x535]' onClick='' title='Choose Race and appropriate height and weight'>View Races</a>
 <!--
                 <label class='tips' rel='Choose your starting level' for='level'>Level:</label> 
                 <select id='level' name='level'>
@@ -16,8 +16,20 @@
             <p>
                 <label class='tips' rel='The name of the player for this character' for='player'>Player:</label>
                 <input type='text' name='name' id='name' />
+                <a style='margin-left: 25px;' href='#classes' rel='diabox[700x535]' onClick=''>Choose Classes</a>
+            </p>
+            <p>
+                <label class='tips' rel='Enter your own age or roll for it in class choices' for='age'>Age:</label>
+                <input class='short' maxlength='3' type='text' id='age' name='age' />
+                <label class='tips' for='gender' rel='Choose your Gender'>Gender:</label>
+                <select name='gender' id='gender'>
+                    <option disabled='disabled' value=''>---</option>
+                    <option value='f'>Female</option>
+                    <option value='m'>Male</option>
+                </select>
                 <label class='tips' for='race' rel='Choose a race'>Race:</label>
                 <select name='race' id='race'>
+                    <option disabled='disabled' value=''>---</option>
                 {% for book,list in c.races|groupby('book') %}
                     <optgroup label='{{ book|escape }}'>
                     {% for r in list %}
@@ -32,7 +44,6 @@
                 <input class='short' maxlength='5' type='text' id='height' name='height' />
                 <label class='tips' rel='Enter your own weight or view races to roll for it' for='weight'>Weight:</label>
                 <input class='short' maxlength='5' type='text' id='height' name='height' />
-                <a style='margin-left: 15px;' href='#showraces' rel='diabox[700x535]' onClick='' title='Choose Race and appropriate height and weight'>View Races</a>
             </p>
             <p>
                 <label class='tips' title='Effective Character Level' rel='Combined level adjustment and class levels' for='ecl'>ECL:</label>
@@ -58,22 +69,22 @@
                     <th></th><th class='stat'>Total</th><th class='stat'>Base</th><th class='stat'>Race</th><th class='stat'>Level</th>
                 </tr>
                 <tr class='attr' id='str'>
-                    <td class='attr_label'>Strength:</td><td class='total stat'></td><td class='base stat'></td>
+                    <td class='attr_label'>Strength:</td><td class='total stat'></td><td class='base stat'></td><td class='race stat'></td>
                 </tr>
                 <tr class='attr' id='dex'>
-                    <td class='attr_label'>Dexterity:</td><td class='total stat'></td><td class='base stat'></td>
+                    <td class='attr_label'>Dexterity:</td><td class='total stat'></td><td class='base stat'></td><td class='race stat'></td>
                 </tr>
                 <tr class='attr' id='wis'>
-                    <td class='attr_label'>Wisdom:</td><td class='total stat'></td><td class='base stat'></td>
+                    <td class='attr_label'>Wisdom:</td><td class='total stat'></td><td class='base stat'></td><td class='race stat'></td>
                 </tr>
                 <tr class='attr' id='int'>
-                    <td class='attr_label'>Intelligence:</td><td class='total stat'></td><td class='base stat'></td>
+                    <td class='attr_label'>Intelligence:</td><td class='total stat'></td><td class='base stat'></td><td class='race stat'></td>
                 </tr>
                 <tr class='attr' id='con'>
-                    <td class='attr_label'>Constitution:</td><td class='total stat'></td><td class='base stat'></td>
+                    <td class='attr_label'>Constitution:</td><td class='total stat'></td><td class='base stat'></td><td class='race stat'></td>
                 </tr>
                 <tr class='attr' id='cha'>
-                    <td class='attr_label'>Charisma:</td><td class='total stat'></td><td class='base stat'></td>
+                    <td class='attr_label'>Charisma:</td><td class='total stat'></td><td class='base stat'></td><td class='race stat'></td>
                 </tr>
             </table>
         </fieldset>
@@ -107,5 +118,32 @@
             </div>
         </div>
         <div id='showraces' style='display: none;'>
-            <p>Show teh races!!</p>
+            <div style='display: table;'>
+                <select style='display: table-cell;' size='5' id='book' onChange='window.character.populate_races(["book_box","select_race_box"]);'>
+                {% for book,list in c.races|groupby('book') %}
+                    <option value='{{ book.id }}'>{{ book|escape }}</option>
+                {% endfor %}
+                </select>
+                <select style='display: table-cell;' size='5' id='select_race'>
+                    
+                </select>
+                <span style='display: table-cell; padding-left: 10px; vertical-align: top;'>
+                    <strong>Gender:</strong>
+                    <select size='1'>
+                        <option value='m'>Female</option>
+                        <option value='f'>Male</option>
+                    </select> <br />
+                    <button onClick='window.character.clearHeightWeight();' style='margin-top: 8px;'>Clear Height &amp; Weight</button><br />
+                    <button onClick='window.character.genHeightWeight();' style='margin-top: 8px;'>Generate Height &amp; Weight</button>
+                </span>
+                <span style='display: table-cell; vertical-align: top;'>
+                    <strong>Height:</strong> <span id='genheight'>5 ' 6 "</span><br />
+                    <strong>Weight:</strong> <span id='genwieght'>150lbs</span>
+                </span>
+                </div>
+            <span>
+                
+                
+                <span id='height_weight'></span>
+            </span>
         </div>
